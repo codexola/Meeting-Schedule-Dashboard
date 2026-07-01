@@ -9,10 +9,12 @@ import {
   TIME_SLOTS,
   formatDateHeader,
   formatHour,
+  formatWeekRange,
   getCallerLabel,
   getJobSiteLabel,
   getMeetingHighlightClass,
   getWeekDates,
+  parseDateKey,
   toDateKey,
 } from "@/lib/constants";
 
@@ -155,6 +157,10 @@ export default function ScheduleGrid() {
           <p className="text-muted mb-0 small">
             Click a cell to view or add a meeting (9 AM – 9 PM)
           </p>
+          <p className="mb-0 mt-1 fw-semibold text-primary">
+            <i className="bi bi-calendar3 me-1" />
+            {formatWeekRange(weekDates[0], weekDates[6])}
+          </p>
         </div>
         <div className="btn-group" role="group" aria-label="Week navigation">
           <button
@@ -204,11 +210,17 @@ export default function ScheduleGrid() {
                 <thead className="table-light">
                   <tr>
                     <th className="time-col">Time</th>
-                    {weekDates.map((date) => (
-                      <th key={toDateKey(date)} className="text-center">
-                        {formatDateHeader(date)}
-                      </th>
-                    ))}
+                    {weekDates.map((date) => {
+                      const dateKey = toDateKey(date);
+                      return (
+                        <th key={dateKey} className="text-center">
+                          <div>{formatDateHeader(date)}</div>
+                          <div className="small text-muted fw-normal">
+                            {dateKey}
+                          </div>
+                        </th>
+                      );
+                    })}
                   </tr>
                 </thead>
                 <tbody>
@@ -232,6 +244,10 @@ export default function ScheduleGrid() {
                               >
                                 <div className="fw-semibold text-truncate">
                                   {meeting.companyName}
+                                </div>
+                                <div className="text-truncate small text-muted">
+                                  {formatDateHeader(parseDateKey(meeting.meetingDate))}{" "}
+                                  {formatHour(meeting.meetingHour)}
                                 </div>
                                 {meeting.meetingLink && (
                                   <div className="text-truncate text-primary">

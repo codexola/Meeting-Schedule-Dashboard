@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import type { MeetingFormData } from "@/lib/types";
 import {
   CALLERS,
+  CUSTOM_JOB_SITE_VALUE,
   JOB_CONDITIONS,
   JOB_SITES,
   JOB_STATUSES,
-  formatDateHeader,
+  TIME_SLOTS,
+  formatDateLong,
   formatHour,
-  parseDateKey,
+  isPresetJobSite,
 } from "@/lib/constants";
 
 interface MeetingModalProps {
@@ -35,6 +37,14 @@ export default function MeetingModal({
   onSave,
   onDelete,
 }: MeetingModalProps) {
+  const jobSiteSelectValue = useMemo(() => {
+    if (!form.jobSiteName) return "";
+    if (isPresetJobSite(form.jobSiteName)) return form.jobSiteName;
+    return CUSTOM_JOB_SITE_VALUE;
+  }, [form.jobSiteName]);
+
+  const showCustomJobSite = jobSiteSelectValue === CUSTOM_JOB_SITE_VALUE;
+
   useEffect(() => {
     if (!isOpen) return;
     const handleKey = (e: KeyboardEvent) => {
@@ -50,7 +60,7 @@ export default function MeetingModal({
 
   if (!isOpen) return null;
 
-  const slotLabel = `${formatDateHeader(parseDateKey(form.meetingDate))} at ${formatHour(form.meetingHour)}`;
+  const slotLabel = `${formatDateLong(form.meetingDate)} at ${formatHour(form.meetingHour)}`;
 
   return (
     <>
@@ -90,6 +100,39 @@ export default function MeetingModal({
 
               <div className="row g-3">
                 <div className="col-md-6">
+                  <label className="form-label">Meeting Date</label>
+                  <input
+                    type="date"
+                    className="form-control"
+                    value={form.meetingDate}
+                    onChange={(e) =>
+                      onChange({ ...form, meetingDate: e.target.value })
+                    }
+                  />
+                  <div className="form-text">{formatDateLong(form.meetingDate)}</div>
+                </div>
+
+                <div className="col-md-6">
+                  <label className="form-label">Meeting Time</label>
+                  <select
+                    className="form-select"
+                    value={form.meetingHour}
+                    onChange={(e) =>
+                      onChange({
+                        ...form,
+                        meetingHour: Number(e.target.value),
+                      })
+                    }
+                  >
+                    {TIME_SLOTS.map((hour) => (
+                      <option key={hour} value={hour}>
+                        {formatHour(hour)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-md-6">
                   <label className="form-label">Company Name *</label>
                   <input
                     className="form-control"
@@ -119,14 +162,24 @@ export default function MeetingModal({
                   </select>
                 </div>
 
-                <div className="col-12">
+                <div className="col-md-6">
                   <label className="form-label">Job Site</label>
                   <select
                     className="form-select"
-                    value={form.jobSiteName}
-                    onChange={(e) =>
-                      onChange({ ...form, jobSiteName: e.target.value })
-                    }
+                    value={jobSiteSelectValue}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (value === CUSTOM_JOB_SITE_VALUE) {
+                        onChange({
+                          ...form,
+                          jobSiteName: isPresetJobSite(form.jobSiteName)
+                            ? ""
+                            : form.jobSiteName,
+                        });
+                        return;
+                      }
+                      onChange({ ...form, jobSiteName: value });
+                    }}
                   >
                     <option value="">Select job site</option>
                     {JOB_SITES.map((site) => (
@@ -134,8 +187,23 @@ export default function MeetingModal({
                         {site.label}
                       </option>
                     ))}
+                    <option value={CUSTOM_JOB_SITE_VALUE}>Other (add custom)</option>
                   </select>
                 </div>
+
+                {showCustomJobSite && (
+                  <div className="col-md-6">
+                    <label className="form-label">Custom Job Site</label>
+                    <input
+                      className="form-control"
+                      value={form.jobSiteName}
+                      onChange={(e) =>
+                        onChange({ ...form, jobSiteName: e.target.value })
+                      }
+                      placeholder="Enter job site name"
+                    />
+                  </div>
+                )}
 
                 <div className="col-12">
                   <label className="form-label">Meeting Link</label>

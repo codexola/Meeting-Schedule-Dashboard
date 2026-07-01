@@ -170,10 +170,47 @@ export function toDateKey(date: Date): string {
   return `${y}-${m}-${d}`;
 }
 
+/** Convert a Prisma @db.Date value to YYYY-MM-DD without timezone shift */
+export function dateKeyFromDbDate(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, "0");
+  const d = String(date.getUTCDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
 export function parseDateKey(key: string): Date {
   const [y, m, d] = key.split("-").map(Number);
-  return new Date(y, m - 1, d);
+  return new Date(y, m - 1, d, 12, 0, 0, 0);
 }
+
+export function formatDateLong(key: string): string {
+  return parseDateKey(key).toLocaleDateString(undefined, {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
+
+export function formatWeekRange(start: Date, end: Date): string {
+  const startLabel = start.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  const endLabel = end.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${startLabel} – ${endLabel}`;
+}
+
+export function isPresetJobSite(value: string): boolean {
+  return JOB_SITES.some((site) => site.value === value);
+}
+
+export const CUSTOM_JOB_SITE_VALUE = "__CUSTOM__";
 
 export function getWeekDates(anchor: Date): Date[] {
   const start = new Date(anchor);
@@ -190,9 +227,10 @@ export function getWeekDates(anchor: Date): Date[] {
 }
 
 export function formatDateHeader(date: Date): string {
-  return date.toLocaleDateString("en-US", {
+  return date.toLocaleDateString(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
+    year: "numeric",
   });
 }

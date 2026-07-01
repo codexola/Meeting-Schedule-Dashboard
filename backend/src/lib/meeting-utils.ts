@@ -1,5 +1,6 @@
 import type { Meeting } from "../generated/prisma/client.js";
 import {
+  dateKeyFromDbDate,
   getMeetingDateTime,
   NOTIFICATION_LEAD_MINUTES,
 } from "./constants.js";
@@ -8,7 +9,7 @@ import type { Meeting as MeetingDto } from "./types.js";
 export function serializeMeeting(meeting: Meeting): MeetingDto {
   return {
     id: meeting.id,
-    meetingDate: meeting.meetingDate.toISOString().slice(0, 10),
+    meetingDate: dateKeyFromDbDate(meeting.meetingDate),
     meetingHour: meeting.meetingHour,
     meetingLink: meeting.meetingLink,
     companyName: meeting.companyName,
