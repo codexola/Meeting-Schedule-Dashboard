@@ -1,0 +1,30 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Meeting {
+  id              String   @id @default(cuid())
+  meetingDate     DateTime @db.Date
+  meetingHour     Int
+  meetingLink     String?
+  companyName     String
+  caller          String?
+  jobSiteName     String?
+  jobPositionLink String?
+  interviewer     String?
+  contactName     String?
+  contactPosition String?
+  chatLink        String?
+  jobStatus       String   @default("JOB_APPLICATION_RECEIVED")
+  jobCondition    String   @default("OK")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@unique([meetingDate, meetingHour])
+  @@index([jobCondition])
+}

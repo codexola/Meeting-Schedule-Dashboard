@@ -1,0 +1,156 @@
+:root {
+  --meeting-reject-bg: #f8d7da;
+  --meeting-reject-border: #f1aeb5;
+  --meeting-hiring-bg: #d1e7dd;
+  --meeting-hiring-border: #a3cfbb;
+  --meeting-default-bg: #e7f1ff;
+  --meeting-default-border: #b6d4fe;
+}
+
+body {
+  background-color: #f8f9fa;
+}
+
+.schedule-table th,
+.schedule-table td {
+  vertical-align: top;
+}
+
+.schedule-table .time-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: #fff;
+  min-width: 90px;
+}
+
+.schedule-table thead .time-col {
+  background-color: #f8f9fa;
+  z-index: 3;
+}
+
+.schedule-cell {
+  cursor: pointer;
+  min-height: 72px;
+  transition: box-shadow 0.15s ease;
+}
+
+.schedule-cell:hover {
+  box-shadow: inset 0 0 0 2px #0d6efd;
+}
+
+.schedule-cell-empty {
+  min-height: 72px;
+  border: 1px dashed #ced4da;
+  border-radius: 0.375rem;
+  color: #adb5bd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-cell-empty:hover {
+  border-color: #0d6efd;
+  color: #0d6efd;
+}
+
+.meeting-cell-reject {
+  background-color: var(--meeting-reject-bg) !important;
+  border: 1px solid var(--meeting-reject-border) !important;
+  border-radius: 0.375rem;
+}
+
+.meeting-cell-hiring {
+  background-color: var(--meeting-hiring-bg) !important;
+  border: 1px solid var(--meeting-hiring-border) !important;
+  border-radius: 0.375rem;
+}
+
+.meeting-cell-default {
+  background-color: var(--meeting-default-bg) !important;
+  border: 1px solid var(--meeting-default-border) !important;
+  border-radius: 0.375rem;
+}
+
+.table-row-reject > td,
+.table-row-reject > th {
+  background-color: var(--meeting-reject-bg) !important;
+}
+
+.table-row-hiring > td,
+.table-row-hiring > th {
+  background-color: var(--meeting-hiring-bg) !important;
+}
+
+.status-table .sticky-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: #fff;
+}
+
+.status-table thead .sticky-col {
+  background-color: #f8f9fa;
+  z-index: 3;
+}
+
+.modal-backdrop-custom {
+  background-color: rgba(33, 37, 41, 0.55);
+}
+
+.legend-swatch {
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 0.25rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  display: inline-block;
+}
+
+.legend-reject {
+  background-color: var(--meeting-reject-bg);
+  border-color: var(--meeting-reject-border);
+}
+
+.legend-hiring {
+  background-color: var(--meeting-hiring-bg);
+  border-color: var(--meeting-hiring-border);
+}
+
+.legend-default {
+  background-color: var(--meeting-default-bg);
+  border-color: var(--meeting-default-border);
+}
+
+.desktop-notification-stack {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: min(360px, calc(100vw - 2rem));
+  pointer-events: none;
+}
+
+.desktop-notification-card {
+  pointer-events: auto;
+  background: #fff;
+  border: 1px solid #ffc107;
+  border-left: 5px solid #ffc107;
+  border-radius: 0.5rem;
+  padding: 1rem;
+}
+
+.notification-permission-banner {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1990;
+  background: #fff;
+  border: 1px solid #dee2e6;
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  width: min(520px, calc(100vw - 2rem));
+}

@@ -1,0 +1,43 @@
+{
+  "name": "meeting-schedule-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "node scripts/start-dev.mjs",
+    "dev:raw": "next dev -H 103.179.45.111 -p 3000",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "eslint",
+    "postinstall": "prisma generate",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:studio": "prisma studio",
+    "test:api": "powershell -ExecutionPolicy Bypass -File ./scripts/test-api.ps1",
+    "test:highlights": "node ./scripts/test-highlights.mjs"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.8.0",
+    "@prisma/client": "^7.8.0",
+    "bootstrap": "^5.3.8",
+    "bootstrap-icons": "^1.13.1",
+    "dotenv": "^17.4.2",
+    "next": "16.2.9",
+    "pg": "^8.22.0",
+    "react": "19.2.4",
+    "react-dom": "19.2.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/pg": "^8.20.0",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "eslint": "^9",
+    "eslint-config-next": "16.2.9",
+    "prisma": "^7.8.0",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
