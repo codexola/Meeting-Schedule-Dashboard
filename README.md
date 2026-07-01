@@ -1,91 +1,107 @@
 # Meeting-Schedule-Dashboard
 
-A React (Next.js) dashboard for organizing meeting schedules and tracking job application status. Data is stored in PostgreSQL and deploys to Vercel.
+Meeting schedule dashboard with a **split architecture**:
 
-## Features
+- **Frontend** (Next.js + Bootstrap) → deployed on **Vercel**
+- **Backend** (Express + Prisma) → runs **locally** on your server
+- **Database** (PostgreSQL) → runs **locally**
 
-### Schedule Page
-- Weekly grid with **dates on the horizontal axis** and **time slots (9 AM – 9 PM) on the vertical axis**
-- Each cell shows the company name, meeting link indicator, and job site
-- Click any cell to open a modal to create or edit a meeting
+```
+Browser → Vercel (frontend) → proxy /api/* → Local backend (103.179.45.111:4000) → PostgreSQL
+```
 
-### Meeting Modal
-- Meeting link, company name, caller, job site, job position link
-- Interviewer, contact person, chat link
-- Job status and OK/REJECT condition
+## Project structure
 
-### Status Page
-- Shows only jobs where the condition is **OK**
-- Job positions listed vertically with details horizontally
+```
+backend/          Local Express API + database access
+prisma/           Database schema and migrations
+src/              Next.js frontend (deploy to Vercel)
+```
 
-### Desktop notifications
-- Alerts **15 minutes before** each meeting
-- Stays visible until you click close
-- Optional browser desktop alerts
+## Local setup
 
-### Color coding
-- **Light red:** REJECT or failed stage
-- **Light green:** Hiring stage after casual interview
-- **Light blue:** Early stage / in progress
-
-## Tech Stack
-
-- Next.js 16, React 19, TypeScript, Bootstrap 5
-- PostgreSQL with Prisma ORM
-- Vercel deployment
-
-## Local development
+### 1. Install dependencies
 
 ```bash
 npm install
-cp .env.example .env
-npx prisma dev          # start local Postgres (optional)
-npm run db:push         # or npm run db:migrate:deploy
-npm run dev             # http://103.179.45.111:3000
+npm install --prefix backend
 ```
 
-## Deploy to Vercel
+### 2. Start PostgreSQL
 
-### 1. Create a PostgreSQL database
+```bash
+npx prisma dev
+```
 
-Use one of:
-- [Vercel Postgres](https://vercel.com/docs/storage/vercel-postgres)
-- [Neon](https://neon.tech)
-- [Supabase](https://supabase.com)
+### 3. Apply database schema
 
-### 2. Set environment variables in Vercel
+```bash
+npm run db:push --prefix backend
+```
 
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `DATABASE_URL` | Yes | PostgreSQL connection string (`?sslmode=require` for cloud DBs) |
+### 4. Start backend (terminal 1)
 
-### 3. Import and deploy
+```bash
+npm run dev --prefix backend
+```
+
+Backend runs at **http://103.179.45.111:4000**
+
+### 5. Start frontend (terminal 2)
+
+```bash
+npm run dev
+```
+
+Frontend runs at **http://103.179.45.111:3000** and proxies API calls to the backend.
+
+## Deploy frontend to Vercel
 
 1. Push this repo to GitHub
-2. Import the project in [Vercel](https://vercel.com/new)
-3. Vercel auto-detects Next.js
-4. Deploy — build runs `prisma generate`, `prisma migrate deploy`, and `next build`
+2. Import in [Vercel](https://vercel.com/new)
+3. Set environment variable:
 
-### 4. Verify
+| Variable | Value |
+|----------|-------|
+| `BACKEND_URL` | `http://103.179.45.111:4000` |
 
-- Open your Vercel URL
-- Go to `/schedule` and create a test meeting
-- Check `/status` for OK jobs
+4. Deploy
 
-## API Endpoints
+### Requirements for Vercel to work
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/meetings` | List meetings |
-| GET | `/api/meetings/upcoming` | Meetings starting within 15 minutes |
-| POST | `/api/meetings` | Create a meeting |
-| GET/PATCH/DELETE | `/api/meetings/[id]` | Single meeting CRUD |
+- Backend must be **running** on your server (`npm run dev --prefix backend`)
+- PostgreSQL must be **running** locally (`npx prisma dev`)
+- Port **4000** must be **open** on `103.179.45.111` so Vercel can reach the API
+
+## Environment files
+
+| File | Purpose |
+|------|---------|
+| `.env` | Frontend: `BACKEND_URL` |
+| `backend/.env` | Backend: `DATABASE_URL`, `HOST`, `PORT`, `FRONTEND_URL` |
+
+## Features
+
+- Schedule grid (9 AM – 9 PM) with color-coded cells
+- Status page (OK jobs only)
+- Meeting modal with caller, job site, status fields
+- Desktop notifications 15 minutes before meetings
 
 ## Scripts
 
 ```bash
-npm run dev              # Local dev server
-npm run build            # Production build
-npm run db:migrate:deploy # Apply migrations to production DB
-npm run test:api         # API tests (local)
+npm run dev                  # Frontend
+npm run dev --prefix backend # Backend API
+npm run build                # Frontend production build
+npm run test:api             # API tests (via frontend proxy)
 ```
+
+## API (backend)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/health` | Health check |
+| GET | `/api/meetings` | List meetings |
+| GET | `/api/meetings/upcoming` | Upcoming meetings |
+| POST | `/api/meetings` | Create meeting |
+| GET/PATCH/DELETE | `/api/meetings/:id` | Single meeting CRUD |

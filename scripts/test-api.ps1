@@ -1,4 +1,5 @@
 $base = "http://103.179.45.111:3000"
+$backend = "http://103.179.45.111:4000"
 $passed = 0
 $failed = 0
 
@@ -11,6 +12,11 @@ function Test-Case($name, $script) {
     Write-Host "FAIL: $name - $($_.Exception.Message)" -ForegroundColor Red
     $script:failed++
   }
+}
+
+Test-Case "Backend health check" {
+  $r = Invoke-RestMethod -Uri "$backend/health"
+  if (-not $r.ok) { throw "Backend unhealthy" }
 }
 
 Test-Case "Cleanup existing meetings" {
