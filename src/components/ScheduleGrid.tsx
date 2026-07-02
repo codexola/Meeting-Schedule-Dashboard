@@ -14,9 +14,10 @@ import {
   getCallerLabel,
   getJobSiteLabel,
   getMeetingHighlightClass,
-  getScheduleCellStripeClass,
+  getScheduleDayColumnClass,
   getScheduleDayHeaderClass,
   getScheduleHalfHourBand,
+  getScheduleTimeBandClass,
   getWeekDates,
   isScheduleHalfHourBoundary,
   meetingSlotKey,
@@ -217,7 +218,7 @@ export default function ScheduleGrid() {
         <div className="card shadow-sm">
           <div className="card-body p-0">
             <div className="table-responsive">
-              <table className="table table-bordered table-hover mb-0 schedule-table small">
+              <table className="table table-bordered mb-0 schedule-table small">
                 <thead className="table-light">
                   <tr>
                     <th className="time-col">Time</th>
@@ -238,17 +239,25 @@ export default function ScheduleGrid() {
                   </tr>
                 </thead>
                 <tbody>
-                  {TIME_SLOTS.map((slot) => (
+                  {TIME_SLOTS.map((slot) => {
+                    const timeBand = getScheduleHalfHourBand(
+                      slot.hour,
+                      slot.minute
+                    );
+                    return (
                     <tr
                       key={`${slot.hour}-${slot.minute}`}
-                      className={
+                      className={[
+                        getScheduleTimeBandClass(slot.hour, slot.minute),
                         isScheduleHalfHourBoundary(slot.minute)
                           ? "schedule-half-hour-row"
-                          : undefined
-                      }
+                          : "",
+                      ]
+                        .filter(Boolean)
+                        .join(" ")}
                     >
                       <td
-                        className={`time-col fw-semibold text-secondary schedule-time-col-half-${getScheduleHalfHourBand(slot.hour, slot.minute)}`}
+                        className={`time-col fw-semibold text-secondary schedule-time-col-half-${timeBand}`}
                       >
                         {formatTime(slot.hour, slot.minute)}
                       </td>
@@ -260,7 +269,7 @@ export default function ScheduleGrid() {
                         return (
                           <td
                             key={meetingSlotKey(dateKey, slot.hour, slot.minute)}
-                            className={`p-1 ${getScheduleCellStripeClass(dayIndex, slot.hour, slot.minute)}`}
+                            className={`p-1 ${getScheduleDayColumnClass(dayIndex)}`}
                             onClick={() =>
                               openCell(dateKey, slot.hour, slot.minute)
                             }
@@ -309,7 +318,8 @@ export default function ScheduleGrid() {
                         );
                       })}
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

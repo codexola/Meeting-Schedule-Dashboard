@@ -17,7 +17,11 @@ function ColorLegend() {
             Early stage / in progress
           </span>
           <span className="text-muted ms-md-2">
-            Grid colors alternate by day and 30-minute time blocks.
+            Columns = day color; rows alternate every 30 minutes (lighter / darker band).
+          </span>
+          <span className="d-flex align-items-center gap-2">
+            <span className="legend-swatch legend-time-band" />
+            30-min time bands
           </span>
         </div>
       </div>

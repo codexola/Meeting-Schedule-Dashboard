@@ -154,7 +154,7 @@ export function getMeetingRowClass(
   const highlight = getMeetingHighlight(jobCondition, jobStatus);
   if (highlight === "reject") return "table-row-reject";
   if (highlight === "hiring") return "table-row-hiring";
-  return "";
+  return "table-row-default";
 }
 
 export const NOTIFICATION_LEAD_MINUTES = 15;
@@ -272,6 +272,39 @@ export function isPresetJobSite(value: string): boolean {
 export function getJobSitePresetValue(value: string): string {
   const preset = JOB_SITES.find((s) => s.value === value || s.label === value);
   return preset?.value ?? value;
+}
+
+export const SCHEDULE_HALF_HOUR_MINUTES = 30;
+
+export function getScheduleHalfHourBand(hour: number, minute: number): 0 | 1 {
+  const minutesSinceStart = (hour - HOUR_START) * 60 + minute;
+  return (Math.floor(minutesSinceStart / SCHEDULE_HALF_HOUR_MINUTES) %
+    2) as 0 | 1;
+}
+
+export function getScheduleDayColumnClass(dayIndex: number): string {
+  return `schedule-day-col-${dayIndex}`;
+}
+
+export function getScheduleTimeBandClass(hour: number, minute: number): string {
+  return `schedule-time-band-${getScheduleHalfHourBand(hour, minute)}`;
+}
+
+/** @deprecated Use getScheduleDayColumnClass + getScheduleTimeBandClass on row/cell */
+export function getScheduleCellStripeClass(
+  dayIndex: number,
+  hour: number,
+  minute: number
+): string {
+  return `${getScheduleDayColumnClass(dayIndex)} ${getScheduleTimeBandClass(hour, minute)}`;
+}
+
+export function getScheduleDayHeaderClass(dayIndex: number): string {
+  return `schedule-day-header-${dayIndex}`;
+}
+
+export function isScheduleHalfHourBoundary(minute: number): boolean {
+  return minute === 0 || minute === 30;
 }
 
 export function getWeekDates(anchor: Date): Date[] {
