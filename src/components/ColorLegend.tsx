@@ -16,6 +16,9 @@ function ColorLegend() {
             <span className="legend-swatch legend-default" />
             Early stage / in progress
           </span>
+          <span className="text-muted ms-md-2">
+            Grid colors alternate by day and 30-minute time blocks.
+          </span>
         </div>
       </div>
     </div>

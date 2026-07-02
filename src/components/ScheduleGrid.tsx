@@ -14,7 +14,11 @@ import {
   getCallerLabel,
   getJobSiteLabel,
   getMeetingHighlightClass,
+  getScheduleCellStripeClass,
+  getScheduleDayHeaderClass,
+  getScheduleHalfHourBand,
   getWeekDates,
+  isScheduleHalfHourBoundary,
   meetingSlotKey,
   parseDateKey,
   toDateKey,
@@ -217,10 +221,13 @@ export default function ScheduleGrid() {
                 <thead className="table-light">
                   <tr>
                     <th className="time-col">Time</th>
-                    {weekDates.map((date) => {
+                    {weekDates.map((date, dayIndex) => {
                       const dateKey = toDateKey(date);
                       return (
-                        <th key={dateKey} className="text-center">
+                        <th
+                          key={dateKey}
+                          className={`text-center ${getScheduleDayHeaderClass(dayIndex)}`}
+                        >
                           <div>{formatDateHeader(date)}</div>
                           <div className="small text-muted fw-normal">
                             {dateKey}
@@ -232,11 +239,20 @@ export default function ScheduleGrid() {
                 </thead>
                 <tbody>
                   {TIME_SLOTS.map((slot) => (
-                    <tr key={`${slot.hour}-${slot.minute}`}>
-                      <td className="time-col fw-semibold text-secondary">
+                    <tr
+                      key={`${slot.hour}-${slot.minute}`}
+                      className={
+                        isScheduleHalfHourBoundary(slot.minute)
+                          ? "schedule-half-hour-row"
+                          : undefined
+                      }
+                    >
+                      <td
+                        className={`time-col fw-semibold text-secondary schedule-time-col-half-${getScheduleHalfHourBand(slot.hour, slot.minute)}`}
+                      >
                         {formatTime(slot.hour, slot.minute)}
                       </td>
-                      {weekDates.map((date) => {
+                      {weekDates.map((date, dayIndex) => {
                         const dateKey = toDateKey(date);
                         const meeting = meetingMap.get(
                           meetingSlotKey(dateKey, slot.hour, slot.minute)
@@ -244,7 +260,7 @@ export default function ScheduleGrid() {
                         return (
                           <td
                             key={meetingSlotKey(dateKey, slot.hour, slot.minute)}
-                            className="p-1"
+                            className={`p-1 ${getScheduleCellStripeClass(dayIndex, slot.hour, slot.minute)}`}
                             onClick={() =>
                               openCell(dateKey, slot.hour, slot.minute)
                             }

@@ -274,6 +274,30 @@ export function getJobSitePresetValue(value: string): string {
   return preset?.value ?? value;
 }
 
+export const SCHEDULE_HALF_HOUR_MINUTES = 30;
+
+export function getScheduleHalfHourBand(hour: number, minute: number): 0 | 1 {
+  return (Math.floor((hour * 60 + minute) / SCHEDULE_HALF_HOUR_MINUTES) %
+    2) as 0 | 1;
+}
+
+export function getScheduleCellStripeClass(
+  dayIndex: number,
+  hour: number,
+  minute: number
+): string {
+  const band = getScheduleHalfHourBand(hour, minute);
+  return `schedule-stripe-day-${dayIndex}-half-${band}`;
+}
+
+export function getScheduleDayHeaderClass(dayIndex: number): string {
+  return `schedule-day-header-${dayIndex}`;
+}
+
+export function isScheduleHalfHourBoundary(minute: number): boolean {
+  return minute === 0 || minute === 30;
+}
+
 export function getWeekDates(anchor: Date): Date[] {
   const start = new Date(anchor);
   const day = start.getDay();
