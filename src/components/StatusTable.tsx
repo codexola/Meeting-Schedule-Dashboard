@@ -5,7 +5,7 @@ import ColorLegend from "./ColorLegend";
 import type { Meeting } from "@/lib/types";
 import {
   formatDateHeader,
-  formatHour,
+  formatTime,
   getCallerLabel,
   getJobSiteLabel,
   getJobStatusLabel,
@@ -155,7 +155,10 @@ export default function StatusTable() {
                       </td>
                       <td>
                         {formatDateHeader(parseDateKey(meeting.meetingDate))}{" "}
-                        {formatHour(meeting.meetingHour)}
+                        {formatTime(
+                          meeting.meetingHour,
+                          meeting.meetingMinute ?? 0
+                        )}
                       </td>
                       <td>{meeting.interviewer || "—"}</td>
                       <td>

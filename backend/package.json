@@ -7,11 +7,11 @@
     "dev": "node scripts/start.mjs",
     "start": "node dist/index.js",
     "build": "tsc",
-    "db:generate": "prisma generate --schema ../prisma/schema.prisma",
-    "db:push": "prisma db push --schema ../prisma/schema.prisma",
-    "db:migrate": "prisma migrate dev --schema ../prisma/schema.prisma",
-    "db:migrate:deploy": "prisma migrate deploy --schema ../prisma/schema.prisma",
-    "db:studio": "prisma studio --schema ../prisma/schema.prisma",
+    "db:generate": "prisma generate --schema ../prisma/schema.prisma --config prisma.config.ts",
+    "db:push": "prisma db push --schema ../prisma/schema.prisma --config prisma.config.ts",
+    "db:migrate": "prisma migrate dev --schema ../prisma/schema.prisma --config prisma.config.ts",
+    "db:migrate:deploy": "prisma migrate deploy --schema ../prisma/schema.prisma --config prisma.config.ts",
+    "db:studio": "prisma studio --schema ../prisma/schema.prisma --config prisma.config.ts",
     "postinstall": "npm run db:generate"
   },
   "dependencies": {

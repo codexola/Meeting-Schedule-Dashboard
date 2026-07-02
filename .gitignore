@@ -44,4 +44,5 @@ next-env.d.ts
 /backend/src/generated/prisma
 /backend/node_modules
 /backend/.env
+/backend/dist
 /src/generated

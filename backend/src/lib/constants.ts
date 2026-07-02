@@ -1,10 +1,57 @@
 export const HOUR_START = 9;
 export const HOUR_END = 21;
+export const SCHEDULE_MINUTE_STEP = 15;
 
-export const TIME_SLOTS = Array.from(
+export interface TimeSlot {
+  hour: number;
+  minute: number;
+}
+
+export const HOUR_OPTIONS = Array.from(
   { length: HOUR_END - HOUR_START + 1 },
   (_, i) => HOUR_START + i
 );
+
+export const MINUTE_OPTIONS = Array.from({ length: 60 }, (_, i) => i);
+
+function buildTimeSlots(): TimeSlot[] {
+  const slots: TimeSlot[] = [];
+  for (let hour = HOUR_START; hour <= HOUR_END; hour++) {
+    const minutes =
+      hour === HOUR_END
+        ? [0]
+        : Array.from(
+            { length: 60 / SCHEDULE_MINUTE_STEP },
+            (_, i) => i * SCHEDULE_MINUTE_STEP
+          );
+    for (const minute of minutes) {
+      slots.push({ hour, minute });
+    }
+  }
+  return slots;
+}
+
+export const TIME_SLOTS: TimeSlot[] = buildTimeSlots();
+
+export function meetingSlotKey(
+  date: string,
+  hour: number,
+  minute: number
+): string {
+  return `${date}-${hour}-${minute}`;
+}
+
+export function formatTime(hour: number, minute = 0): string {
+  const period = hour >= 12 ? "PM" : "AM";
+  const displayHour = hour % 12 === 0 ? 12 : hour % 12;
+  const displayMinute = String(minute).padStart(2, "0");
+  return `${displayHour}:${displayMinute} ${period}`;
+}
+
+/** @deprecated Use formatTime(hour, minute) */
+export function formatHour(hour: number): string {
+  return formatTime(hour, 0);
+}
 
 export const CALLERS = [
   { value: "WANG_BUG", label: "Wang Bug" },
@@ -113,27 +160,38 @@ export function getMeetingRowClass(
 export const NOTIFICATION_LEAD_MINUTES = 15;
 export const NOTIFICATION_POLL_INTERVAL_MS = 30_000;
 
-export function getMeetingDateTime(meetingDate: string, meetingHour: number): Date {
+export function getMeetingDateTime(
+  meetingDate: string,
+  meetingHour: number,
+  meetingMinute = 0
+): Date {
   const [y, m, d] = meetingDate.split("-").map(Number);
-  return new Date(y, m - 1, d, meetingHour, 0, 0, 0);
+  return new Date(y, m - 1, d, meetingHour, meetingMinute, 0, 0);
 }
 
 export function getMinutesUntilMeeting(
   meetingDate: string,
   meetingHour: number,
+  meetingMinute = 0,
   now = new Date()
 ): number {
-  const start = getMeetingDateTime(meetingDate, meetingHour);
+  const start = getMeetingDateTime(meetingDate, meetingHour, meetingMinute);
   return (start.getTime() - now.getTime()) / (60 * 1000);
 }
 
 export function shouldNotifyMeeting(
   meetingDate: string,
   meetingHour: number,
+  meetingMinute = 0,
   leadMinutes = NOTIFICATION_LEAD_MINUTES,
   now = new Date()
 ): boolean {
-  const minutesUntil = getMinutesUntilMeeting(meetingDate, meetingHour, now);
+  const minutesUntil = getMinutesUntilMeeting(
+    meetingDate,
+    meetingHour,
+    meetingMinute,
+    now
+  );
   return minutesUntil > 0 && minutesUntil <= leadMinutes;
 }
 
@@ -141,18 +199,19 @@ export function getNotificationStorageKey(meetingId: string): string {
   return `meeting-notification-dismissed:${meetingId}`;
 }
 
-export function formatHour(hour: number): string {
-  if (hour === 12) return "12:00 PM";
-  if (hour > 12) return `${hour - 12}:00 PM`;
-  return `${hour}:00 AM`;
-}
-
 export function getCallerLabel(caller: string): string {
   return CALLERS.find((c) => c.value === caller)?.label ?? caller;
 }
 
 export function getJobSiteLabel(jobSite: string): string {
-  return JOB_SITES.find((s) => s.value === jobSite)?.label ?? jobSite;
+  const preset = JOB_SITES.find(
+    (s) => s.value === jobSite || s.label === jobSite
+  );
+  return preset?.label ?? jobSite;
+}
+
+export function normalizeJobSiteName(value: string): string {
+  return value.trim();
 }
 
 export function getJobStatusLabel(status: string): string {
@@ -207,10 +266,13 @@ export function formatWeekRange(start: Date, end: Date): string {
 }
 
 export function isPresetJobSite(value: string): boolean {
-  return JOB_SITES.some((site) => site.value === value);
+  return JOB_SITES.some((site) => site.value === value || site.label === value);
 }
 
-export const CUSTOM_JOB_SITE_VALUE = "__CUSTOM__";
+export function getJobSitePresetValue(value: string): string {
+  const preset = JOB_SITES.find((s) => s.value === value || s.label === value);
+  return preset?.value ?? value;
+}
 
 export function getWeekDates(anchor: Date): Date[] {
   const start = new Date(anchor);

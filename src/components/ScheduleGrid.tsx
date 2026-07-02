@@ -6,14 +6,16 @@ import MeetingModal from "./MeetingModal";
 import type { Meeting, MeetingFormData } from "@/lib/types";
 import { emptyMeetingForm } from "@/lib/types";
 import {
+  SCHEDULE_MINUTE_STEP,
   TIME_SLOTS,
   formatDateHeader,
-  formatHour,
+  formatTime,
   formatWeekRange,
   getCallerLabel,
   getJobSiteLabel,
   getMeetingHighlightClass,
   getWeekDates,
+  meetingSlotKey,
   parseDateKey,
   toDateKey,
 } from "@/lib/constants";
@@ -22,6 +24,7 @@ function meetingToForm(meeting: Meeting): MeetingFormData {
   return {
     meetingDate: meeting.meetingDate,
     meetingHour: meeting.meetingHour,
+    meetingMinute: meeting.meetingMinute ?? 0,
     meetingLink: meeting.meetingLink ?? "",
     companyName: meeting.companyName,
     caller: meeting.caller ?? "",
@@ -43,7 +46,7 @@ export default function ScheduleGrid() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<MeetingFormData>(
-    emptyMeetingForm(toDateKey(new Date()), 9)
+    emptyMeetingForm(toDateKey(new Date()), 9, 0)
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +58,10 @@ export default function ScheduleGrid() {
   const meetingMap = useMemo(() => {
     const map = new Map<string, Meeting>();
     for (const m of meetings) {
-      map.set(`${m.meetingDate}-${m.meetingHour}`, m);
+      map.set(
+        meetingSlotKey(m.meetingDate, m.meetingHour, m.meetingMinute ?? 0),
+        m
+      );
     }
     return map;
   }, [meetings]);
@@ -81,8 +87,8 @@ export default function ScheduleGrid() {
     fetchMeetings();
   }, [fetchMeetings]);
 
-  const openCell = (dateKey: string, hour: number) => {
-    const key = `${dateKey}-${hour}`;
+  const openCell = (dateKey: string, hour: number, minute: number) => {
+    const key = meetingSlotKey(dateKey, hour, minute);
     const existing = meetingMap.get(key);
     setError(null);
     if (existing) {
@@ -90,7 +96,7 @@ export default function ScheduleGrid() {
       setForm(meetingToForm(existing));
     } else {
       setEditingId(null);
-      setForm(emptyMeetingForm(dateKey, hour));
+      setForm(emptyMeetingForm(dateKey, hour, minute));
     }
     setModalOpen(true);
   };
@@ -155,7 +161,8 @@ export default function ScheduleGrid() {
         <div>
           <h2 className="h3 mb-1">Schedule</h2>
           <p className="text-muted mb-0 small">
-            Click a cell to view or add a meeting (9 AM – 9 PM)
+            Click a cell to view or add a meeting (9 AM – 9 PM,{" "}
+            {SCHEDULE_MINUTE_STEP}-minute slots)
           </p>
           <p className="mb-0 mt-1 fw-semibold text-primary">
             <i className="bi bi-calendar3 me-1" />
@@ -224,19 +231,23 @@ export default function ScheduleGrid() {
                   </tr>
                 </thead>
                 <tbody>
-                  {TIME_SLOTS.map((hour) => (
-                    <tr key={hour}>
+                  {TIME_SLOTS.map((slot) => (
+                    <tr key={`${slot.hour}-${slot.minute}`}>
                       <td className="time-col fw-semibold text-secondary">
-                        {formatHour(hour)}
+                        {formatTime(slot.hour, slot.minute)}
                       </td>
                       {weekDates.map((date) => {
                         const dateKey = toDateKey(date);
-                        const meeting = meetingMap.get(`${dateKey}-${hour}`);
+                        const meeting = meetingMap.get(
+                          meetingSlotKey(dateKey, slot.hour, slot.minute)
+                        );
                         return (
                           <td
-                            key={`${dateKey}-${hour}`}
+                            key={meetingSlotKey(dateKey, slot.hour, slot.minute)}
                             className="p-1"
-                            onClick={() => openCell(dateKey, hour)}
+                            onClick={() =>
+                              openCell(dateKey, slot.hour, slot.minute)
+                            }
                           >
                             {meeting ? (
                               <div
@@ -246,8 +257,13 @@ export default function ScheduleGrid() {
                                   {meeting.companyName}
                                 </div>
                                 <div className="text-truncate small text-muted">
-                                  {formatDateHeader(parseDateKey(meeting.meetingDate))}{" "}
-                                  {formatHour(meeting.meetingHour)}
+                                  {formatDateHeader(
+                                    parseDateKey(meeting.meetingDate)
+                                  )}{" "}
+                                  {formatTime(
+                                    meeting.meetingHour,
+                                    meeting.meetingMinute ?? 0
+                                  )}
                                 </div>
                                 {meeting.meetingLink && (
                                   <div className="text-truncate text-primary">

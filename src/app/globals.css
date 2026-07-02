@@ -31,7 +31,7 @@ body {
 
 .schedule-cell {
   cursor: pointer;
-  min-height: 72px;
+  min-height: 48px;
   transition: box-shadow 0.15s ease;
 }
 
@@ -40,7 +40,7 @@ body {
 }
 
 .schedule-cell-empty {
-  min-height: 72px;
+  min-height: 48px;
   border: 1px dashed #ced4da;
   border-radius: 0.375rem;
   color: #adb5bd;

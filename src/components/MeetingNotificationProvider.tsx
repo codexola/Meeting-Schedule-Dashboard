@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Meeting } from "@/lib/types";
 import {
   formatDateHeader,
-  formatHour,
+  formatTime,
   getCallerLabel,
   getJobSiteLabel,
   getMinutesUntilMeeting,
@@ -57,7 +57,8 @@ function NotificationCard({
 }) {
   const minutesUntil = getMinutesUntilMeeting(
     meeting.meetingDate,
-    meeting.meetingHour
+    meeting.meetingHour,
+    meeting.meetingMinute ?? 0
   );
 
   return (
@@ -71,7 +72,7 @@ function NotificationCard({
           <h6 className="mb-1">{meeting.companyName}</h6>
           <div className="small text-secondary">
             {formatDateHeader(parseDateKey(meeting.meetingDate))} at{" "}
-            {formatHour(meeting.meetingHour)}
+            {formatTime(meeting.meetingHour, meeting.meetingMinute ?? 0)}
           </div>
         </div>
         <button
@@ -158,7 +159,8 @@ export default function MeetingNotificationProvider() {
         if (desktopShownRef.current.has(meeting.id)) continue;
         const minutesUntil = getMinutesUntilMeeting(
           meeting.meetingDate,
-          meeting.meetingHour
+          meeting.meetingHour,
+          meeting.meetingMinute ?? 0
         );
         showDesktopNotification(meeting, minutesUntil);
         desktopShownRef.current.add(meeting.id);

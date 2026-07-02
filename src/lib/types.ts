@@ -4,6 +4,7 @@ export interface Meeting {
   id: string;
   meetingDate: string;
   meetingHour: number;
+  meetingMinute: number;
   meetingLink: string | null;
   companyName: string;
   caller: string | null;
@@ -22,6 +23,7 @@ export interface Meeting {
 export interface MeetingFormData {
   meetingDate: string;
   meetingHour: number;
+  meetingMinute: number;
   meetingLink: string;
   companyName: string;
   caller: string;
@@ -37,10 +39,12 @@ export interface MeetingFormData {
 
 export const emptyMeetingForm = (
   date: string,
-  hour: number
+  hour: number,
+  minute = 0
 ): MeetingFormData => ({
   meetingDate: date,
   meetingHour: hour,
+  meetingMinute: minute,
   meetingLink: "",
   companyName: "",
   caller: "",

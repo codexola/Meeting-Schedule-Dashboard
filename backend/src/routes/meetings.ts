@@ -29,7 +29,11 @@ router.get("/upcoming", async (req, res) => {
           lte: parseMeetingDate(endDate),
         },
       },
-      orderBy: [{ meetingDate: "asc" }, { meetingHour: "asc" }],
+      orderBy: [
+        { meetingDate: "asc" },
+        { meetingHour: "asc" },
+        { meetingMinute: "asc" },
+      ],
     });
 
     const serialized = meetings.map(serializeMeeting);
@@ -68,7 +72,11 @@ router.get("/", async (req, res) => {
 
     const meetings = await prisma.meeting.findMany({
       where,
-      orderBy: [{ meetingDate: "asc" }, { meetingHour: "asc" }],
+      orderBy: [
+        { meetingDate: "asc" },
+        { meetingHour: "asc" },
+        { meetingMinute: "asc" },
+      ],
     });
 
     res.json(meetings.map(serializeMeeting));
@@ -91,6 +99,7 @@ router.post("/", async (req, res) => {
       data: {
         meetingDate: parseMeetingDate(body.meetingDate),
         meetingHour: Number(body.meetingHour),
+        meetingMinute: Number(body.meetingMinute ?? 0),
         meetingLink: body.meetingLink?.trim() || null,
         companyName: body.companyName.trim(),
         caller: body.caller?.trim() || null,
@@ -151,6 +160,9 @@ router.patch("/:id", async (req, res) => {
         }),
         ...(body.meetingHour !== undefined && {
           meetingHour: Number(body.meetingHour),
+        }),
+        ...(body.meetingMinute !== undefined && {
+          meetingMinute: Number(body.meetingMinute),
         }),
         ...(body.meetingLink !== undefined && {
           meetingLink: body.meetingLink?.trim() || null,

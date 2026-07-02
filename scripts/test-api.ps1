@@ -52,9 +52,10 @@ Test-Case "GET meetings empty" {
 $bodyHiring = @{
   meetingDate = "2026-07-01"
   meetingHour = 10
+  meetingMinute = 0
   companyName = "Hiring Corp"
   caller = "ORION"
-  jobSiteName = "FINDY"
+  jobSiteName = "Findy"
   meetingLink = "https://meet.google.com/hiring"
   jobPositionLink = "https://jobs.example.com/hiring"
   interviewer = "Jane Doe"
@@ -69,70 +70,103 @@ Test-Case "POST hiring stage meeting" {
   $script:hiring = Invoke-RestMethod -Uri "$base/api/meetings" -Method POST -Body $bodyHiring -ContentType "application/json"
   if ($script:hiring.companyName -ne "Hiring Corp") { throw "Wrong company" }
   if ($script:hiring.caller -ne "ORION") { throw "Wrong caller" }
+  if ($script:hiring.meetingMinute -ne 0) { throw "Wrong minute" }
+}
+
+$bodyCustomSite = @{
+  meetingDate = "2026-07-01"
+  meetingHour = 10
+  meetingMinute = 30
+  companyName = "Custom Site Corp"
+  caller = "DAMIEN_DAVIAU"
+  jobSiteName = "LinkedIn"
+  jobStatus = "JOB_APPLICATION_RECEIVED"
+  jobCondition = "OK"
+} | ConvertTo-Json
+
+Test-Case "POST custom job site at 10:30" {
+  $script:custom = Invoke-RestMethod -Uri "$base/api/meetings" -Method POST -Body $bodyCustomSite -ContentType "application/json"
+  if ($script:custom.jobSiteName -ne "LinkedIn") { throw "Wrong job site" }
+  if ($script:custom.meetingMinute -ne 30) { throw "Wrong minute" }
 }
 
 $bodyReject = @{
   meetingDate = "2026-07-01"
   meetingHour = 11
+  meetingMinute = 15
   companyName = "Rejected Corp"
   caller = "ALEX"
-  jobSiteName = "GREEN"
+  jobSiteName = "Green"
   jobStatus = "CASUAL_INTERVIEW_FAIL"
   jobCondition = "REJECT"
 } | ConvertTo-Json
 
-Test-Case "POST reject meeting" {
+Test-Case "POST reject meeting at 11:15" {
   $script:reject = Invoke-RestMethod -Uri "$base/api/meetings" -Method POST -Body $bodyReject -ContentType "application/json"
   if ($script:reject.jobCondition -ne "REJECT") { throw "Wrong condition" }
+  if ($script:reject.meetingMinute -ne 15) { throw "Wrong minute" }
 }
 
 $bodyEarly = @{
   meetingDate = "2026-07-01"
   meetingHour = 14
+  meetingMinute = 45
   companyName = "Early Corp"
   caller = "WANG_BUG"
-  jobSiteName = "TALENT"
+  jobSiteName = "Talent"
   jobStatus = "CASUAL_INTERVIEW_PASS"
   jobCondition = "OK"
 } | ConvertTo-Json
 
-Test-Case "POST early stage meeting" {
+Test-Case "POST early stage meeting at 14:45" {
   $script:early = Invoke-RestMethod -Uri "$base/api/meetings" -Method POST -Body $bodyEarly -ContentType "application/json"
   if ($script:early.jobStatus -ne "CASUAL_INTERVIEW_PASS") { throw "Wrong status" }
+  if ($script:early.meetingMinute -ne 45) { throw "Wrong minute" }
 }
 
 Test-Case "GET meetings by date range" {
   $r = Invoke-RestMethod -Uri "$base/api/meetings?startDate=2026-06-29&endDate=2026-07-05"
-  if ($r.Count -ne 3) { throw "Expected 3 meetings, got $($r.Count)" }
+  if ($r.Count -ne 4) { throw "Expected 4 meetings, got $($r.Count)" }
 }
 
 Test-Case "GET OK meetings for status page" {
   $r = Invoke-RestMethod -Uri "$base/api/meetings?jobCondition=OK"
-  if ($r.Count -ne 2) { throw "Expected 2 OK meetings, got $($r.Count)" }
+  if ($r.Count -ne 3) { throw "Expected 3 OK meetings, got $($r.Count)" }
 }
 
-Test-Case "PATCH meeting" {
-  $patch = @{ jobStatus = "SECOND_INTERVIEW_SCHEDULED" } | ConvertTo-Json
+Test-Case "PATCH meeting time and status" {
+  $patch = @{
+    meetingHour = 10
+    meetingMinute = 5
+    jobStatus = "SECOND_INTERVIEW_SCHEDULED"
+  } | ConvertTo-Json
   $updated = Invoke-RestMethod -Uri "$base/api/meetings/$($script:hiring.id)" -Method PATCH -Body $patch -ContentType "application/json"
-  if ($updated.jobStatus -ne "SECOND_INTERVIEW_SCHEDULED") { throw "Patch failed" }
+  if ($updated.jobStatus -ne "SECOND_INTERVIEW_SCHEDULED") { throw "Patch status failed" }
+  if ($updated.meetingMinute -ne 5) { throw "Patch minute failed" }
 }
 
 Test-Case "GET single meeting" {
   $r = Invoke-RestMethod -Uri "$base/api/meetings/$($script:hiring.id)"
   if ($r.id -ne $script:hiring.id) { throw "Wrong meeting returned" }
+  if ($r.meetingMinute -ne 5) { throw "Wrong minute on GET" }
 }
 
 Test-Case "Duplicate slot rejected" {
+  $duplicateBody = @{
+    meetingDate = "2026-07-01"
+    meetingHour = 10
+    meetingMinute = 5
+    companyName = "Duplicate Corp"
+    jobCondition = "OK"
+  } | ConvertTo-Json
   $resp = try {
-    Invoke-WebRequest -Uri "$base/api/meetings" -Method POST -Body $bodyHiring -ContentType "application/json" -UseBasicParsing
+    Invoke-WebRequest -Uri "$base/api/meetings" -Method POST -Body $duplicateBody -ContentType "application/json" -UseBasicParsing
     $null
   } catch {
-    $_.Exception.Response
+    $_.ErrorDetails.Message
   }
   if (-not $resp) { throw "Should have failed" }
-  $reader = New-Object System.IO.StreamReader($resp.GetResponseStream())
-  $text = $reader.ReadToEnd()
-  if ($text -notmatch "already exists") { throw "Wrong error: $text" }
+  if ($resp -notmatch "already exists") { throw "Wrong error: $resp" }
 }
 
 Test-Case "GET upcoming meetings endpoint" {

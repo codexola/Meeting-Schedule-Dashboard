@@ -11,6 +11,7 @@ model Meeting {
   id              String   @id @default(cuid())
   meetingDate     DateTime @db.Date
   meetingHour     Int
+  meetingMinute   Int      @default(0)
   meetingLink     String?
   companyName     String
   caller          String?
@@ -25,6 +26,6 @@ model Meeting {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  @@unique([meetingDate, meetingHour])
+  @@unique([meetingDate, meetingHour, meetingMinute])
   @@index([jobCondition])
 }

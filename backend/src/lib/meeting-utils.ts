@@ -11,6 +11,7 @@ export function serializeMeeting(meeting: Meeting): MeetingDto {
     id: meeting.id,
     meetingDate: dateKeyFromDbDate(meeting.meetingDate),
     meetingHour: meeting.meetingHour,
+    meetingMinute: meeting.meetingMinute ?? 0,
     meetingLink: meeting.meetingLink,
     companyName: meeting.companyName,
     caller: meeting.caller,
@@ -39,13 +40,25 @@ export function getUpcomingMeetings(
 ): MeetingDto[] {
   return meetings
     .filter((meeting) => {
-      const start = getMeetingDateTime(meeting.meetingDate, meeting.meetingHour);
+      const start = getMeetingDateTime(
+        meeting.meetingDate,
+        meeting.meetingHour,
+        meeting.meetingMinute ?? 0
+      );
       const diffMinutes = (start.getTime() - now.getTime()) / (60 * 1000);
       return diffMinutes > 0 && diffMinutes <= leadMinutes;
     })
     .sort((a, b) => {
-      const aTime = getMeetingDateTime(a.meetingDate, a.meetingHour).getTime();
-      const bTime = getMeetingDateTime(b.meetingDate, b.meetingHour).getTime();
+      const aTime = getMeetingDateTime(
+        a.meetingDate,
+        a.meetingHour,
+        a.meetingMinute ?? 0
+      ).getTime();
+      const bTime = getMeetingDateTime(
+        b.meetingDate,
+        b.meetingHour,
+        b.meetingMinute ?? 0
+      ).getTime();
       return aTime - bTime;
     });
 }
