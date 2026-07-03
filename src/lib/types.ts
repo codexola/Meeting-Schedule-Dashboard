@@ -1,5 +1,33 @@
 import type { JobCondition, JobStatus } from "./constants";
 
+export interface CompanyStage {
+  id: string;
+  companyId: string;
+  stage: string;
+  outcome: string;
+  meetingLink: string | null;
+  scheduledDate: string | null;
+  scheduledHour: number | null;
+  scheduledMinute: number;
+  updatedAt: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  caller: string | null;
+  jobSiteName: string | null;
+  jobPositionLink: string | null;
+  contactName: string | null;
+  contactPosition: string | null;
+  chatLink: string | null;
+  jobCondition: string;
+  meetingCount: number;
+  stages: CompanyStage[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Meeting {
   id: string;
   meetingDate: string;
@@ -7,6 +35,7 @@ export interface Meeting {
   meetingMinute: number;
   meetingLink: string | null;
   companyName: string;
+  companyId: string | null;
   caller: string | null;
   jobSiteName: string | null;
   jobPositionLink: string | null;
@@ -57,3 +86,9 @@ export const emptyMeetingForm = (
   jobStatus: "JOB_APPLICATION_RECEIVED",
   jobCondition: "OK",
 });
+
+export interface SearchResults {
+  query: string;
+  companies: Company[];
+  meetings: Meeting[];
+}

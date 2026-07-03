@@ -185,6 +185,50 @@ Test-Case "DELETE reject meeting" {
   }
 }
 
+Test-Case "Discussions page loads" {
+  $r = Invoke-WebRequest -Uri "$base/discussions" -UseBasicParsing
+  if ($r.StatusCode -ne 200) { throw "Status $($r.StatusCode)" }
+  if ($r.Content -notmatch "Company Discussions") { throw "Missing discussions content" }
+}
+
+Test-Case "POST companies sync from meetings" {
+  $r = Invoke-RestMethod -Uri "$base/api/companies/sync" -Method POST
+  if ($r.synced -lt 1) { throw "Expected synced companies" }
+}
+
+Test-Case "GET companies list" {
+  $r = Invoke-RestMethod -Uri "$base/api/companies"
+  if ($r.Count -lt 3) { throw "Expected at least 3 companies, got $($r.Count)" }
+  $script:company = $r | Where-Object { $_.name -eq "Hiring Corp" } | Select-Object -First 1
+  if (-not $script:company) { throw "Hiring Corp company not found" }
+  if ($script:company.stages.Count -ne 6) { throw "Expected 6 stages" }
+}
+
+Test-Case "PATCH company stage outcome" {
+  $patch = @{
+    outcome = "SCHEDULED"
+    scheduledDate = "2026-07-15"
+    scheduledHour = 14
+    scheduledMinute = 30
+    meetingLink = "https://meet.google.com/third-round"
+  } | ConvertTo-Json
+  $updated = Invoke-RestMethod -Uri "$base/api/companies/$($script:company.id)/stages/THIRD_INTERVIEW" -Method PATCH -Body $patch -ContentType "application/json"
+  $stage = $updated.stages | Where-Object { $_.stage -eq "THIRD_INTERVIEW" }
+  if ($stage.outcome -ne "SCHEDULED") { throw "Stage outcome not updated" }
+  if ($stage.scheduledHour -ne 14) { throw "Stage hour not updated" }
+}
+
+Test-Case "GET search by keyword" {
+  $r = Invoke-RestMethod -Uri "$base/api/search?q=Hiring"
+  if ($r.companies.Count -lt 1) { throw "Expected company search results" }
+  if ($r.meetings.Count -lt 1) { throw "Expected meeting search results" }
+}
+
+Test-Case "GET meetings search filter" {
+  $r = Invoke-RestMethod -Uri "$base/api/meetings?q=Custom"
+  if ($r.Count -lt 1) { throw "Expected filtered meetings" }
+}
+
 Write-Host ""
 Write-Host "Results: $passed passed, $failed failed" -ForegroundColor Cyan
 if ($failed -gt 0) { exit 1 }

@@ -279,3 +279,100 @@ body {
   padding: 0.75rem 1rem;
   width: min(520px, calc(100vw - 2rem));
 }
+
+/* Global search */
+.global-search {
+  min-width: 200px;
+}
+
+.global-search-dropdown {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  width: min(420px, calc(100vw - 2rem));
+  z-index: 1050;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.global-search-item:hover {
+  background-color: #f1f3f5;
+}
+
+/* Company discussions */
+.discussions-table-wrap {
+  max-height: calc(100vh - 220px);
+  overflow: auto;
+}
+
+.discussions-company-col {
+  min-width: 160px;
+}
+
+.discussions-stage-col {
+  min-width: 180px;
+}
+
+.sticky-discussions-col {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background-color: #fff;
+}
+
+.discussions-table thead .sticky-discussions-col {
+  z-index: 3;
+  background-color: #f8f9fa;
+}
+
+.company-stage-cell {
+  min-width: 170px;
+}
+
+.stage-outcome-badge.stage-outcome-pass,
+.stage-outcome-btn.active.stage-outcome-pass {
+  background-color: #2b8a3e !important;
+  border-color: #2b8a3e !important;
+  color: #fff !important;
+}
+
+.stage-outcome-badge.stage-outcome-fail,
+.stage-outcome-btn.active.stage-outcome-fail {
+  background-color: #c92a2a !important;
+  border-color: #c92a2a !important;
+  color: #fff !important;
+}
+
+.stage-outcome-badge.stage-outcome-waiting,
+.stage-outcome-btn.active.stage-outcome-waiting {
+  background-color: #e67700 !important;
+  border-color: #e67700 !important;
+  color: #fff !important;
+}
+
+.stage-outcome-badge.stage-outcome-scheduled,
+.stage-outcome-btn.active.stage-outcome-scheduled {
+  background-color: #1864ab !important;
+  border-color: #1864ab !important;
+  color: #fff !important;
+}
+
+.stage-outcome-badge.stage-outcome-none {
+  background-color: #868e96 !important;
+  color: #fff !important;
+}
+
+.discussions-company-reject {
+  background-color: var(--meeting-reject-bg) !important;
+  color: var(--meeting-reject-text) !important;
+}
+
+.discussions-company-hiring {
+  background-color: var(--meeting-hiring-bg) !important;
+  color: var(--meeting-hiring-text) !important;
+}
+
+.discussions-company-default {
+  background-color: var(--meeting-default-bg) !important;
+  color: var(--meeting-default-text) !important;
+}

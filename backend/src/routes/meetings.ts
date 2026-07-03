@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { syncCompanyFromMeeting } from "../lib/company-utils.js";
 import { NOTIFICATION_LEAD_MINUTES } from "../lib/constants.js";
 import {
   getUpcomingMeetings,
@@ -52,11 +53,12 @@ router.get("/upcoming", async (req, res) => {
 
 router.get("/", async (req, res) => {
   try {
-    const { startDate, endDate, jobCondition } = req.query;
+    const { startDate, endDate, jobCondition, q } = req.query;
 
     const where: {
       meetingDate?: { gte: Date; lte: Date };
       jobCondition?: string;
+      OR?: Array<Record<string, unknown>>;
     } = {};
 
     if (startDate && endDate) {
@@ -68,6 +70,18 @@ router.get("/", async (req, res) => {
 
     if (jobCondition) {
       where.jobCondition = String(jobCondition);
+    }
+
+    if (q) {
+      const term = String(q);
+      where.OR = [
+        { companyName: { contains: term, mode: "insensitive" } },
+        { caller: { contains: term, mode: "insensitive" } },
+        { jobSiteName: { contains: term, mode: "insensitive" } },
+        { interviewer: { contains: term, mode: "insensitive" } },
+        { contactName: { contains: term, mode: "insensitive" } },
+        { contactPosition: { contains: term, mode: "insensitive" } },
+      ];
     }
 
     const meetings = await prisma.meeting.findMany({
@@ -114,7 +128,13 @@ router.post("/", async (req, res) => {
       },
     });
 
-    res.status(201).json(serializeMeeting(meeting));
+    await syncCompanyFromMeeting(prisma, meeting);
+
+    const refreshed = await prisma.meeting.findUnique({
+      where: { id: meeting.id },
+    });
+
+    res.status(201).json(serializeMeeting(refreshed ?? meeting));
   } catch (error) {
     console.error("POST /api/meetings error:", error);
     const message =
@@ -198,7 +218,13 @@ router.patch("/:id", async (req, res) => {
       },
     });
 
-    res.json(serializeMeeting(meeting));
+    await syncCompanyFromMeeting(prisma, meeting);
+
+    const refreshed = await prisma.meeting.findUnique({
+      where: { id: meeting.id },
+    });
+
+    res.json(serializeMeeting(refreshed ?? meeting));
   } catch (error) {
     console.error("PATCH /api/meetings/:id error:", error);
     const message =

@@ -81,6 +81,29 @@ export const JOB_STATUSES = [
   { value: "SECOND_INTERVIEW_SCHEDULED", label: "2nd Interview Scheduled" },
   { value: "SECOND_INTERVIEW_PASS", label: "2nd Interview Pass" },
   { value: "SECOND_INTERVIEW_FAIL", label: "2nd Interview Fail" },
+  { value: "THIRD_INTERVIEW_SCHEDULED", label: "3rd Interview Scheduled" },
+  { value: "THIRD_INTERVIEW_PASS", label: "3rd Interview Pass" },
+  { value: "THIRD_INTERVIEW_FAIL", label: "3rd Interview Fail" },
+  { value: "HIRING_WAITING", label: "Hiring Waiting" },
+  { value: "HIRING_SCHEDULED", label: "Hiring Scheduled" },
+  { value: "HIRING_PASS", label: "Hiring Pass" },
+  { value: "HIRING_FAIL", label: "Hiring Fail" },
+] as const;
+
+export const PIPELINE_STAGES = [
+  { value: "CASUAL_INTERVIEW", label: "Casual Interview" },
+  { value: "DOCUMENT_SCREENING", label: "Document Screening" },
+  { value: "FIRST_INTERVIEW", label: "1st Interview" },
+  { value: "SECOND_INTERVIEW", label: "2nd Interview" },
+  { value: "THIRD_INTERVIEW", label: "3rd Interview" },
+  { value: "HIRING", label: "Hiring" },
+] as const;
+
+export const STAGE_OUTCOMES = [
+  { value: "PASS", label: "Pass" },
+  { value: "FAIL", label: "Fail" },
+  { value: "WAITING", label: "Waiting" },
+  { value: "SCHEDULED", label: "Scheduled" },
 ] as const;
 
 export const JOB_CONDITIONS = [
@@ -92,6 +115,10 @@ export type Caller = (typeof CALLERS)[number]["value"];
 export type JobSite = (typeof JOB_SITES)[number]["value"];
 export type JobStatus = (typeof JOB_STATUSES)[number]["value"];
 export type JobCondition = (typeof JOB_CONDITIONS)[number]["value"];
+export type PipelineStage = (typeof PIPELINE_STAGES)[number]["value"];
+export type StageOutcome =
+  | (typeof STAGE_OUTCOMES)[number]["value"]
+  | "NOT_STARTED";
 
 /** Statuses that indicate the candidate did not meet hiring criteria */
 export const FAILED_STATUSES: JobStatus[] = [
@@ -100,6 +127,8 @@ export const FAILED_STATUSES: JobStatus[] = [
   "DOCUMENT_SCREENING_FAIL",
   "FIRST_INTERVIEW_FAIL",
   "SECOND_INTERVIEW_FAIL",
+  "THIRD_INTERVIEW_FAIL",
+  "HIRING_FAIL",
 ];
 
 /** Active hiring pipeline stages after the casual interview */
@@ -110,6 +139,11 @@ export const HIRING_STAGE_STATUSES: JobStatus[] = [
   "FIRST_INTERVIEW_PASS",
   "SECOND_INTERVIEW_SCHEDULED",
   "SECOND_INTERVIEW_PASS",
+  "THIRD_INTERVIEW_SCHEDULED",
+  "THIRD_INTERVIEW_PASS",
+  "HIRING_WAITING",
+  "HIRING_SCHEDULED",
+  "HIRING_PASS",
 ];
 
 export type MeetingHighlight = "reject" | "hiring" | "default";
@@ -216,6 +250,53 @@ export function normalizeJobSiteName(value: string): string {
 
 export function getJobStatusLabel(status: string): string {
   return JOB_STATUSES.find((s) => s.value === status)?.label ?? status;
+}
+
+export function getPipelineStageLabel(stage: string): string {
+  return PIPELINE_STAGES.find((s) => s.value === stage)?.label ?? stage;
+}
+
+export function getStageOutcomeLabel(outcome: string): string {
+  if (outcome === "NOT_STARTED") return "—";
+  return STAGE_OUTCOMES.find((o) => o.value === outcome)?.label ?? outcome;
+}
+
+export function getStageOutcomeBadgeClass(outcome: string): string {
+  switch (outcome) {
+    case "PASS":
+      return "stage-outcome-pass";
+    case "FAIL":
+      return "stage-outcome-fail";
+    case "WAITING":
+      return "stage-outcome-waiting";
+    case "SCHEDULED":
+      return "stage-outcome-scheduled";
+    default:
+      return "stage-outcome-none";
+  }
+}
+
+export function getCompanyDiscussionRowClass(
+  jobCondition: string,
+  stages: { stage: string; outcome: string }[]
+): string {
+  if (jobCondition === "REJECT" || stages.some((s) => s.outcome === "FAIL")) {
+    return "discussions-company-reject";
+  }
+  const hiringStages = new Set([
+    "DOCUMENT_SCREENING",
+    "FIRST_INTERVIEW",
+    "SECOND_INTERVIEW",
+    "THIRD_INTERVIEW",
+    "HIRING",
+  ]);
+  const inHiring = stages.some(
+    (s) =>
+      hiringStages.has(s.stage) &&
+      (s.outcome === "PASS" || s.outcome === "SCHEDULED")
+  );
+  if (inHiring) return "discussions-company-hiring";
+  return "discussions-company-default";
 }
 
 export function getJobConditionLabel(condition: string): string {

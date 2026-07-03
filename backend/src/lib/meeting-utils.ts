@@ -14,6 +14,7 @@ export function serializeMeeting(meeting: Meeting): MeetingDto {
     meetingMinute: meeting.meetingMinute ?? 0,
     meetingLink: meeting.meetingLink,
     companyName: meeting.companyName,
+    companyId: meeting.companyId,
     caller: meeting.caller,
     jobSiteName: meeting.jobSiteName,
     jobPositionLink: meeting.jobPositionLink,

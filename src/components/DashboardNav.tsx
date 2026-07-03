@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import GlobalSearch from "./GlobalSearch";
 
 const navItems = [
   { href: "/schedule", label: "Schedule", icon: "bi-calendar3" },
   { href: "/status", label: "Status", icon: "bi-list-check" },
+  { href: "/discussions", label: "Discussions", icon: "bi-building" },
 ];
 
 export default function DashboardNav() {
@@ -13,7 +15,7 @@ export default function DashboardNav() {
 
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-primary shadow-sm">
-      <div className="container-fluid px-3 px-lg-4" style={{ maxWidth: 1600 }}>
+      <div className="container-fluid px-3 px-lg-4" style={{ maxWidth: 1800 }}>
         <div className="navbar-brand mb-0">
           <div className="fw-bold">
             <i className="bi bi-briefcase me-2" />
@@ -23,7 +25,8 @@ export default function DashboardNav() {
             Manage interviews and job application progress
           </small>
         </div>
-        <div className="d-flex gap-2 ms-auto">
+        <div className="d-flex align-items-center gap-2 ms-auto flex-wrap justify-content-end">
+          <GlobalSearch />
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -33,7 +36,10 @@ export default function DashboardNav() {
                 className={`btn btn-sm ${isActive ? "btn-light text-primary fw-semibold" : "btn-outline-light"}`}
               >
                 <i className={`bi ${item.icon} me-1`} />
-                {item.label}
+                <span className="d-none d-lg-inline">{item.label}</span>
+                <span className="d-lg-none">
+                  {item.label.split(" ")[0]}
+                </span>
               </Link>
             );
           })}

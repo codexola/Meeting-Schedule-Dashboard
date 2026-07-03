@@ -7,6 +7,38 @@ datasource db {
   provider = "postgresql"
 }
 
+model Company {
+  id              String   @id @default(cuid())
+  name            String   @unique
+  caller          String?
+  jobSiteName     String?
+  jobPositionLink String?
+  contactName     String?
+  contactPosition String?
+  chatLink        String?
+  jobCondition    String   @default("OK")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  stages   CompanyStage[]
+  meetings Meeting[]
+}
+
+model CompanyStage {
+  id              String    @id @default(cuid())
+  companyId       String
+  company         Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  stage           String
+  outcome         String    @default("NOT_STARTED")
+  meetingLink     String?
+  scheduledDate   DateTime? @db.Date
+  scheduledHour   Int?
+  scheduledMinute Int?
+  updatedAt       DateTime  @updatedAt
+
+  @@unique([companyId, stage])
+}
+
 model Meeting {
   id              String   @id @default(cuid())
   meetingDate     DateTime @db.Date
@@ -14,6 +46,8 @@ model Meeting {
   meetingMinute   Int      @default(0)
   meetingLink     String?
   companyName     String
+  companyId       String?
+  company         Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   caller          String?
   jobSiteName     String?
   jobPositionLink String?
@@ -28,4 +62,6 @@ model Meeting {
 
   @@unique([meetingDate, meetingHour, meetingMinute])
   @@index([jobCondition])
+  @@index([companyId])
+  @@index([companyName])
 }

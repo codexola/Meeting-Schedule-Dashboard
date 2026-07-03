@@ -1,7 +1,9 @@
 import "./env.js";
 import cors from "cors";
 import express from "express";
+import companiesRouter from "./routes/companies.js";
 import meetingsRouter from "./routes/meetings.js";
+import searchRouter from "./routes/search.js";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 4000);
@@ -43,6 +45,8 @@ app.get("/health", (_req, res) => {
 });
 
 app.use("/api/meetings", meetingsRouter);
+app.use("/api/companies", companiesRouter);
+app.use("/api/search", searchRouter);
 
 app.use(
   (
