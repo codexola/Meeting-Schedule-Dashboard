@@ -1,13 +1,17 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import CompanyStageCell from "./CompanyStageCell";
 import type { Company, CompanyStage } from "@/lib/types";
 import {
   PIPELINE_STAGES,
+  formatDateHeader,
+  formatTime,
   getCallerLabel,
   getCompanyDiscussionRowClass,
   getJobSiteLabel,
+  parseDateKey,
 } from "@/lib/constants";
 
 function countPassedStages(stages: CompanyStage[]): number {
@@ -17,7 +21,6 @@ function countPassedStages(stages: CompanyStage[]): number {
 export default function CompanyDiscussionsTable() {
   const [companies, setCompanies] = useState<Company[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [savingKey, setSavingKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
@@ -32,7 +35,7 @@ export default function CompanyDiscussionsTable() {
       const res = await fetch(url);
       if (!res.ok) throw new Error("Failed to load companies");
       const data: Company[] = await res.json();
-      setCompanies(data);
+      setCompanies(data.filter((c) => c.meetingCount > 0));
     } catch {
       setError("Failed to load company discussions");
     } finally {
@@ -43,20 +46,6 @@ export default function CompanyDiscussionsTable() {
   useEffect(() => {
     fetchCompanies();
   }, [fetchCompanies]);
-
-  const handleSync = async () => {
-    setSyncing(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/companies/sync", { method: "POST" });
-      if (!res.ok) throw new Error("Sync failed");
-      await fetchCompanies();
-    } catch {
-      setError("Failed to sync companies from existing meetings");
-    } finally {
-      setSyncing(false);
-    }
-  };
 
   const handleStageUpdate = async (
     companyId: string,
@@ -98,8 +87,8 @@ export default function CompanyDiscussionsTable() {
         <div>
           <h2 className="h3 mb-1">Company Discussions</h2>
           <p className="text-muted mb-0 small">
-            Track interview stages per company — Pass, Fail, Waiting, or
-            Scheduled for each stage with links and times.
+            Companies listed here are loaded from Schedule meetings (single
+            database). Stage changes update the linked schedule meeting.
           </p>
         </div>
         <div className="d-flex gap-2 flex-wrap">
@@ -111,14 +100,6 @@ export default function CompanyDiscussionsTable() {
             onChange={(e) => setFilter(e.target.value)}
             style={{ minWidth: 200 }}
           />
-          <button
-            type="button"
-            className="btn btn-outline-primary btn-sm"
-            onClick={handleSync}
-            disabled={syncing}
-          >
-            {syncing ? "Syncing..." : "Sync from meetings"}
-          </button>
           <button
             type="button"
             className="btn btn-outline-secondary btn-sm"
@@ -147,17 +128,9 @@ export default function CompanyDiscussionsTable() {
         <div className="card shadow-sm">
           <div className="card-body text-center py-5">
             <p className="text-muted mb-3">
-              No companies yet. Add meetings on the Schedule page, then click
-              &quot;Sync from meetings&quot; to import them here.
+              No companies with scheduled meetings. Add a meeting on the{" "}
+              <Link href="/schedule">Schedule</Link> page first.
             </p>
-            <button
-              type="button"
-              className="btn btn-primary btn-sm"
-              onClick={handleSync}
-              disabled={syncing}
-            >
-              Sync from meetings
-            </button>
           </div>
         </div>
       ) : (
@@ -170,9 +143,9 @@ export default function CompanyDiscussionsTable() {
                     <th className="discussions-company-col sticky-discussions-col">
                       Company
                     </th>
+                    <th>Schedule</th>
                     <th>Caller</th>
                     <th>Job Site</th>
-                    <th>Meetings</th>
                     <th>Stages Done</th>
                     {PIPELINE_STAGES.map((s) => (
                       <th key={s.value} className="discussions-stage-col text-center">
@@ -187,17 +160,43 @@ export default function CompanyDiscussionsTable() {
                       company.jobCondition,
                       company.stages
                     );
+                    const latest = company.latestMeeting;
                     return (
                       <tr key={company.id}>
                         <td className={`sticky-discussions-col fw-semibold ${rowClass}`}>
                           <div>{company.name}</div>
                           {company.contactName && (
-                            <small className="text-muted d-block">
+                            <small className="d-block opacity-75">
                               {company.contactName}
                               {company.contactPosition
                                 ? ` · ${company.contactPosition}`
                                 : ""}
                             </small>
+                          )}
+                        </td>
+                        <td>
+                          {latest ? (
+                            <>
+                              <div>
+                                {formatDateHeader(
+                                  parseDateKey(latest.meetingDate)
+                                )}
+                              </div>
+                              <div>
+                                {formatTime(
+                                  latest.meetingHour,
+                                  latest.meetingMinute
+                                )}
+                              </div>
+                              <Link
+                                href="/schedule"
+                                className="small"
+                              >
+                                View on schedule
+                              </Link>
+                            </>
+                          ) : (
+                            "—"
                           )}
                         </td>
                         <td>
@@ -210,7 +209,6 @@ export default function CompanyDiscussionsTable() {
                             ? getJobSiteLabel(company.jobSiteName)
                             : "—"}
                         </td>
-                        <td className="text-center">{company.meetingCount}</td>
                         <td className="text-center">
                           <span className="badge text-bg-secondary">
                             {countPassedStages(company.stages)} /{" "}

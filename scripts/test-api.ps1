@@ -193,7 +193,7 @@ Test-Case "Discussions page loads" {
 
 Test-Case "POST companies sync from meetings" {
   $r = Invoke-RestMethod -Uri "$base/api/companies/sync" -Method POST
-  if ($r.synced -lt 1) { throw "Expected synced companies" }
+  if ($r.meetingCount -lt 1) { throw "Expected meetings to sync" }
 }
 
 Test-Case "GET companies list" {
@@ -202,6 +202,16 @@ Test-Case "GET companies list" {
   $script:company = $r | Where-Object { $_.name -eq "Hiring Corp" } | Select-Object -First 1
   if (-not $script:company) { throw "Hiring Corp company not found" }
   if ($script:company.stages.Count -ne 6) { throw "Expected 6 stages" }
+  if ($script:company.meetingCount -lt 1) { throw "Company must have schedule meetings" }
+  if (-not $script:company.latestMeeting) { throw "Missing latest schedule meeting" }
+}
+
+Test-Case "Companies without meetings are hidden" {
+  $meetings = Invoke-RestMethod -Uri "$base/api/meetings"
+  $companies = Invoke-RestMethod -Uri "$base/api/companies"
+  foreach ($company in $companies) {
+    if ($company.meetingCount -lt 1) { throw "Orphan company returned: $($company.name)" }
+  }
 }
 
 Test-Case "PATCH company stage outcome" {

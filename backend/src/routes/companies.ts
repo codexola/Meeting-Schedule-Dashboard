@@ -1,8 +1,11 @@
 import { Router } from "express";
 import {
   parseStageDate,
+  removeOrphanCompanies,
+  reconcileCompaniesFromMeetings,
   serializeCompany,
   stageOutcomeToJobStatus,
+  syncCompanyFromMeeting,
 } from "../lib/company-utils.js";
 import { PIPELINE_STAGES } from "../lib/constants.js";
 import { serializeMeeting } from "../lib/meeting-utils.js";
@@ -13,6 +16,18 @@ const router = Router();
 const companyInclude = {
   stages: { orderBy: { stage: "asc" as const } },
   _count: { select: { meetings: true } },
+  meetings: {
+    orderBy: [
+      { meetingDate: "desc" as const },
+      { meetingHour: "desc" as const },
+      { meetingMinute: "desc" as const },
+    ],
+    take: 1,
+  },
+};
+
+const scheduledCompanyFilter = {
+  meetings: { some: {} },
 };
 
 router.get("/", async (req, res) => {
@@ -20,24 +35,29 @@ router.get("/", async (req, res) => {
     const { q } = req.query;
     const where = q
       ? {
-          OR: [
-            { name: { contains: String(q), mode: "insensitive" as const } },
-            { caller: { contains: String(q), mode: "insensitive" as const } },
+          AND: [
+            scheduledCompanyFilter,
             {
-              jobSiteName: {
-                contains: String(q),
-                mode: "insensitive" as const,
-              },
-            },
-            {
-              contactName: {
-                contains: String(q),
-                mode: "insensitive" as const,
-              },
+              OR: [
+                { name: { contains: String(q), mode: "insensitive" as const } },
+                { caller: { contains: String(q), mode: "insensitive" as const } },
+                {
+                  jobSiteName: {
+                    contains: String(q),
+                    mode: "insensitive" as const,
+                  },
+                },
+                {
+                  contactName: {
+                    contains: String(q),
+                    mode: "insensitive" as const,
+                  },
+                },
+              ],
             },
           ],
         }
-      : {};
+      : scheduledCompanyFilter;
 
     const companies = await prisma.company.findMany({
       where,
@@ -54,16 +74,8 @@ router.get("/", async (req, res) => {
 
 router.post("/sync", async (_req, res) => {
   try {
-    const meetings = await prisma.meeting.findMany();
-    const { syncCompanyFromMeeting } = await import(
-      "../lib/company-utils.js"
-    );
-
-    for (const meeting of meetings) {
-      await syncCompanyFromMeeting(prisma, meeting);
-    }
-
-    res.json({ synced: meetings.length, total: meetings.length });
+    const result = await reconcileCompaniesFromMeetings(prisma);
+    res.json(result);
   } catch (error) {
     console.error("POST /api/companies/sync error:", error);
     res.status(500).json({ error: "Failed to sync companies from meetings" });
@@ -72,8 +84,12 @@ router.post("/sync", async (_req, res) => {
 
 router.get("/:id", async (req, res) => {
   try {
-    const company = await prisma.company.findUnique({
-      where: { id: req.params.id },
+
+    const company = await prisma.company.findFirst({
+      where: {
+        id: req.params.id,
+        ...scheduledCompanyFilter,
+      },
       include: companyInclude,
     });
 
@@ -115,8 +131,11 @@ router.patch("/:id/stages/:stage", async (req, res) => {
       return;
     }
 
-    const company = await prisma.company.findUnique({
-      where: { id: req.params.id },
+    const company = await prisma.company.findFirst({
+      where: {
+        id: req.params.id,
+        ...scheduledCompanyFilter,
+      },
     });
     if (!company) {
       res.status(404).json({ error: "Company not found" });
@@ -146,7 +165,7 @@ router.patch("/:id/stages/:stage", async (req, res) => {
           : Number(body.scheduledMinute)
         : undefined;
 
-    const stage = await prisma.companyStage.upsert({
+    await prisma.companyStage.upsert({
       where: {
         companyId_stage: { companyId: company.id, stage: stageKey },
       },
@@ -168,43 +187,53 @@ router.patch("/:id/stages/:stage", async (req, res) => {
       },
     });
 
-    if (outcome && outcome !== "NOT_STARTED") {
-      const jobStatus = stageOutcomeToJobStatus(
-        stageKey as (typeof PIPELINE_STAGES)[number]["value"],
-        outcome
-      );
-      if (jobStatus) {
-        const latestMeeting = await prisma.meeting.findFirst({
-          where: { companyId: company.id },
-          orderBy: [
-            { meetingDate: "desc" },
-            { meetingHour: "desc" },
-            { meetingMinute: "desc" },
-          ],
-        });
-        if (latestMeeting) {
-          await prisma.meeting.update({
-            where: { id: latestMeeting.id },
-            data: {
-              jobStatus,
-              ...(outcome === "FAIL" && { jobCondition: "REJECT" }),
-              ...(meetingLink !== undefined && { meetingLink }),
-              ...(scheduledDate !== undefined && {
-                meetingDate: scheduledDate ?? latestMeeting.meetingDate,
-              }),
-              ...(scheduledHour !== undefined &&
-                scheduledHour !== null && { meetingHour: scheduledHour }),
-              ...(scheduledMinute !== undefined &&
-                scheduledMinute !== null && {
-                  meetingMinute: scheduledMinute,
-                }),
-            },
-          });
-        }
-      }
+    const latestMeeting = await prisma.meeting.findFirst({
+      where: { companyId: company.id },
+      orderBy: [
+        { meetingDate: "desc" },
+        { meetingHour: "desc" },
+        { meetingMinute: "desc" },
+      ],
+    });
+
+    if (!latestMeeting) {
+      res.status(404).json({ error: "No schedule meeting found for company" });
+      return;
     }
 
-    const updated = await prisma.company.findUnique({
+    const jobStatus =
+      outcome && outcome !== "NOT_STARTED"
+        ? stageOutcomeToJobStatus(
+            stageKey as (typeof PIPELINE_STAGES)[number]["value"],
+            outcome
+          )
+        : null;
+
+    await prisma.meeting.update({
+      where: { id: latestMeeting.id },
+      data: {
+        ...(jobStatus && { jobStatus }),
+        ...(outcome === "FAIL" && { jobCondition: "REJECT" }),
+        ...(outcome === "PASS" && { jobCondition: "OK" }),
+        ...(meetingLink !== undefined && { meetingLink }),
+        ...(scheduledDate !== undefined &&
+          scheduledDate !== null && { meetingDate: scheduledDate }),
+        ...(scheduledHour !== undefined &&
+          scheduledHour !== null && { meetingHour: scheduledHour }),
+        ...(scheduledMinute !== undefined &&
+          scheduledMinute !== null && { meetingMinute: scheduledMinute }),
+      },
+    });
+
+    const refreshedMeeting = await prisma.meeting.findUnique({
+      where: { id: latestMeeting.id },
+    });
+    if (refreshedMeeting) {
+      await syncCompanyFromMeeting(prisma, refreshedMeeting);
+    }
+    await removeOrphanCompanies(prisma);
+
+    const updated = await prisma.company.findFirst({
       where: { id: company.id },
       include: companyInclude,
     });

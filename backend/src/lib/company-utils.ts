@@ -28,7 +28,11 @@ export function serializeCompanyStage(stage: CompanyStage): CompanyStageDto {
 }
 
 export function serializeCompany(
-  company: Company & { stages: CompanyStage[]; _count?: { meetings: number } }
+  company: Company & {
+    stages: CompanyStage[];
+    _count?: { meetings: number };
+    meetings?: Meeting[];
+  }
 ): CompanyDto {
   const stages = PIPELINE_STAGES.map((def) => {
     const existing = company.stages.find((s) => s.stage === def.value);
@@ -56,7 +60,16 @@ export function serializeCompany(
     contactPosition: company.contactPosition,
     chatLink: company.chatLink,
     jobCondition: company.jobCondition,
-    meetingCount: company._count?.meetings ?? 0,
+    meetingCount: company._count?.meetings ?? company.meetings?.length ?? 0,
+    latestMeeting: company.meetings?.[0]
+      ? {
+          id: company.meetings[0].id,
+          meetingDate: dateKeyFromDbDate(company.meetings[0].meetingDate),
+          meetingHour: company.meetings[0].meetingHour,
+          meetingMinute: company.meetings[0].meetingMinute ?? 0,
+          meetingLink: company.meetings[0].meetingLink,
+        }
+      : null,
     stages,
     createdAt: company.createdAt.toISOString(),
     updatedAt: company.updatedAt.toISOString(),
@@ -266,6 +279,37 @@ export async function syncCompanyFromMeeting(db: Db, meeting: Meeting) {
   }
 
   return company.id;
+}
+
+/** Keep Company rows aligned with Schedule meetings — single source of truth. */
+export async function removeOrphanCompanies(db: Db) {
+  const result = await db.company.deleteMany({
+    where: { meetings: { none: {} } },
+  });
+  return result.count;
+}
+
+export async function reconcileCompaniesFromMeetings(db: Db) {
+  const meetings = await db.meeting.findMany({
+    orderBy: [
+      { meetingDate: "asc" },
+      { meetingHour: "asc" },
+      { meetingMinute: "asc" },
+    ],
+  });
+
+  for (const meeting of meetings) {
+    await syncCompanyFromMeeting(db, meeting);
+  }
+
+  const removed = await removeOrphanCompanies(db);
+
+  const companyCount = await db.company.count();
+  return {
+    meetingCount: meetings.length,
+    companyCount,
+    removedOrphans: removed,
+  };
 }
 
 export function parseStageDate(dateStr: string | null | undefined): Date | null {

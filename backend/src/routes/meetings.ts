@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { syncCompanyFromMeeting } from "../lib/company-utils.js";
+import { removeOrphanCompanies, syncCompanyFromMeeting } from "../lib/company-utils.js";
 import { NOTIFICATION_LEAD_MINUTES } from "../lib/constants.js";
 import {
   getUpcomingMeetings,
@@ -129,6 +129,7 @@ router.post("/", async (req, res) => {
     });
 
     await syncCompanyFromMeeting(prisma, meeting);
+    await removeOrphanCompanies(prisma);
 
     const refreshed = await prisma.meeting.findUnique({
       where: { id: meeting.id },
@@ -219,6 +220,7 @@ router.patch("/:id", async (req, res) => {
     });
 
     await syncCompanyFromMeeting(prisma, meeting);
+    await removeOrphanCompanies(prisma);
 
     const refreshed = await prisma.meeting.findUnique({
       where: { id: meeting.id },
@@ -238,6 +240,7 @@ router.patch("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     await prisma.meeting.delete({ where: { id: req.params.id } });
+    await removeOrphanCompanies(prisma);
     res.json({ success: true });
   } catch (error) {
     console.error("DELETE /api/meetings/:id error:", error);

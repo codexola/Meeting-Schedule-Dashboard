@@ -16,6 +16,7 @@ router.get("/", async (req, res) => {
     const [companies, meetings] = await Promise.all([
       prisma.company.findMany({
         where: {
+          meetings: { some: {} },
           OR: [
             { name: { contains: q, mode: "insensitive" } },
             { caller: { contains: q, mode: "insensitive" } },
@@ -27,6 +28,14 @@ router.get("/", async (req, res) => {
         include: {
           stages: { orderBy: { stage: "asc" } },
           _count: { select: { meetings: true } },
+          meetings: {
+            orderBy: [
+              { meetingDate: "desc" },
+              { meetingHour: "desc" },
+              { meetingMinute: "desc" },
+            ],
+            take: 1,
+          },
         },
         orderBy: { name: "asc" },
         take: 20,

@@ -23,6 +23,13 @@ export interface Company {
   chatLink: string | null;
   jobCondition: string;
   meetingCount: number;
+  latestMeeting: {
+    id: string;
+    meetingDate: string;
+    meetingHour: number;
+    meetingMinute: number;
+    meetingLink: string | null;
+  } | null;
   stages: CompanyStage[];
   createdAt: string;
   updatedAt: string;
