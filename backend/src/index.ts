@@ -40,6 +40,15 @@ app.use(
 
 app.use(express.json());
 
+app.get("/", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "meeting-schedule-backend",
+    health: "/health",
+    api: "/api/meetings",
+  });
+});
+
 app.get("/health", (_req, res) => {
   res.json({
     ok: true,
