@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const backendRoot = join(__dirname, "..");
 const HOST = process.env.HOST ?? "103.179.45.111";
-const PORT = process.env.PORT ?? "4000";
+const PORT = process.env.PORT ?? "3100";
 
 function killPid(pid) {
   if (!pid || pid === String(process.pid)) return;

@@ -12,6 +12,7 @@
     "db:migrate": "prisma migrate dev --schema ../prisma/schema.prisma --config prisma.config.ts",
     "db:migrate:deploy": "prisma migrate deploy --schema ../prisma/schema.prisma --config prisma.config.ts",
     "db:studio": "prisma studio --schema ../prisma/schema.prisma --config prisma.config.ts",
+    "db:restore": "node scripts/restore-data.mjs",
     "postinstall": "npm run db:generate"
   },
   "dependencies": {

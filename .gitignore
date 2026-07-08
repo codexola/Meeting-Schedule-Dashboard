@@ -46,3 +46,8 @@ next-env.d.ts
 /backend/.env
 /backend/dist
 /src/generated
+
+# Keep committed snapshots under data/ for restore after schema/config changes
+!data/
+!data/**/*.json
+

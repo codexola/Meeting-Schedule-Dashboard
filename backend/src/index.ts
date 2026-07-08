@@ -6,13 +6,16 @@ import meetingsRouter from "./routes/meetings.js";
 import searchRouter from "./routes/search.js";
 
 const app = express();
-const PORT = Number(process.env.PORT ?? 4000);
+const PORT = Number(process.env.PORT ?? 3100);
 const HOST = process.env.HOST ?? "0.0.0.0";
 
 const allowedOrigins = (process.env.FRONTEND_URL ?? "")
   .split(",")
   .map((origin) => origin.trim())
-  .filter(Boolean);
+  .filter(Boolean)
+  .map((origin) =>
+    /^https?:\/\//i.test(origin) ? origin : `https://${origin}`
+  );
 
 app.use(
   cors({
@@ -24,8 +27,9 @@ app.use(
 
       const isAllowed =
         allowedOrigins.includes(origin) ||
-        /\.vercel\.app$/.test(origin) ||
+        /\.vercel\.app$/i.test(origin) ||
         origin.startsWith("http://localhost:") ||
+        origin.startsWith("http://127.0.0.1:") ||
         origin.startsWith("http://103.179.45.111:");
 
       callback(null, isAllowed);

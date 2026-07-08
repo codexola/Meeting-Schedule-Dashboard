@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 const backendUrl =
-  process.env.BACKEND_URL ?? "http://103.179.45.111:4000";
+  process.env.BACKEND_URL ?? "http://103.179.45.111:3100";
 
 const nextConfig: NextConfig = {
   async rewrites() {
