@@ -10,6 +10,10 @@ Meeting schedule dashboard with a **split architecture**:
 Browser → Vercel (frontend) → proxy /api/* → Local backend (103.179.45.111:3100) → PostgreSQL
 ```
 
+> **The local database and backend are kept always-on with [PM2](https://pm2.keymetrics.io/).**
+> See [Always-on with PM2](#always-on-with-pm2). This is what keeps the Vercel
+> site working and prevents the recurring `ECONNREFUSED` (database down) errors.
+
 ## Project structure
 
 ```
@@ -29,11 +33,14 @@ npm install --prefix backend
 
 ### 2. Start PostgreSQL
 
+The database (Prisma Postgres / `prisma dev`) runs on port **51214**. In normal
+operation it is managed by PM2 and is always running (see
+[Always-on with PM2](#always-on-with-pm2)). For a one-off local session you can
+also start it manually:
+
 ```bash
 npx prisma dev
 ```
-
-Keep this running. The backend auto-starts the database if it is stopped, but `npx prisma dev` must remain available on port **51214**.
 
 ### 3. Apply database schema
 
@@ -71,11 +78,40 @@ Frontend runs at **http://103.179.45.111:3000** and proxies API calls to the bac
 
 ### Requirements for Vercel to work
 
-- Backend must be **running** on your server (`npm run dev --prefix backend`)
-- PostgreSQL must be **running** locally (`npx prisma dev` on port 51214)
+- Backend must be **running** on your server (managed by PM2 — see below)
+- PostgreSQL must be **running** locally (managed by PM2 — port 51214)
 - Port **3100** must be **open** on `103.179.45.111` so Vercel can reach the API
 
-If API calls return 500 with `ECONNREFUSED` in backend logs, the database is down. Run `npx prisma dev` from the project root.
+If API calls return 500 with `ECONNREFUSED` in backend logs, the database is
+down. With PM2 it self-recovers; you can also force it with `pm2 restart meeting-db`.
+
+## Always-on with PM2
+
+The database and backend are run as PM2 processes so they survive terminal/session
+closes and server reboots — this is the fix for the recurring `ECONNREFUSED`
+(database-down) failures. Definitions live in `ecosystem.config.cjs`:
+
+| PM2 process | What it runs |
+|-------------|--------------|
+| `meeting-db` | `scripts/run-db.mjs` → managed `prisma dev` on port **51214** |
+| `meeting-backend` | `backend/scripts/start.mjs` → Express API on port **3100** |
+
+Common commands:
+
+```bash
+pm2 start ecosystem.config.cjs   # start both (first time)
+pm2 save                         # persist the list so it is restored on reboot
+pm2 status                       # see meeting-db / meeting-backend
+pm2 logs meeting-backend         # tail backend logs
+pm2 restart meeting-backend      # restart after code changes
+```
+
+Reboot persistence: `pm2 save` writes the process list, and the **`MeetingSchedule`**
+Windows scheduled task (`deploy/windows-pm2-start.ps1`) restores it on boot.
+
+> **Do not run `npm run dev --prefix backend` while `meeting-backend` is managed by
+> PM2** — both bind port 3100 and the dev script kills whatever is on that port.
+> For local development, first `pm2 stop meeting-backend`.
 
 ## Environment files
 

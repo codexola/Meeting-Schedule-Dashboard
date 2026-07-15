@@ -1,12 +1,11 @@
 /**
- * Ensure the local database is actually serving queries before the backend
- * starts. Unlike a plain TCP port check, this runs a real `SELECT 1` so it can
- * never report a false "ready" (which previously led to ECONNREFUSED at runtime).
+ * Wait until the local database is actually serving queries (real SELECT 1).
  *
- * If the database is down it starts `prisma dev` (detached) and waits until a
- * real query succeeds.
+ * The database lifecycle is owned by the PM2 process "meeting-db" (see
+ * ecosystem.config.cjs). This script only WAITS for it to be queryable so the
+ * backend starts in the right order; it does not spawn its own database to
+ * avoid two managers racing over the same port.
  */
-import { spawn } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
@@ -14,8 +13,6 @@ import pg from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const backendRoot = join(__dirname, "..");
-const projectRoot = join(backendRoot, "..");
-
 config({ path: join(backendRoot, ".env") });
 
 const DATABASE_URL =
@@ -42,44 +39,25 @@ async function canQuery() {
   }
 }
 
-async function waitUntilQueryable(timeoutMs = 60_000) {
-  const started = Date.now();
-  while (Date.now() - started < timeoutMs) {
-    if (await canQuery()) return true;
-    await sleep(1500);
-  }
-  return false;
-}
-
-export async function ensureDatabase() {
+export async function ensureDatabase(timeoutMs = 60_000) {
   if (await canQuery()) {
     console.log("Database is reachable and serving queries.");
     return;
   }
 
-  console.log("Database not serving queries. Starting Prisma dev...");
-
-  const child = spawn(
-    process.platform === "win32" ? "npx.cmd" : "npx",
-    ["prisma", "dev"],
-    {
-      cwd: projectRoot,
-      stdio: "ignore",
-      detached: true,
-      shell: process.platform === "win32",
-      env: process.env,
+  console.log("Waiting for the database to become available...");
+  const started = Date.now();
+  while (Date.now() - started < timeoutMs) {
+    await sleep(1500);
+    if (await canQuery()) {
+      console.log("Database is ready and serving queries.");
+      return;
     }
-  );
-  child.unref();
-
-  const ready = await waitUntilQueryable();
-  if (!ready) {
-    throw new Error(
-      'Database did not become queryable. Start it manually with "npx prisma dev" from the project root.'
-    );
   }
 
-  console.log("Database is ready and serving queries.");
+  throw new Error(
+    'Database is not available. Ensure it is running (PM2 "meeting-db", or run "npx prisma dev" from the project root).'
+  );
 }
 
 if (
