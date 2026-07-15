@@ -8,12 +8,14 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient() {
   const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL!,
-    // Fail fast when the database is unreachable so requests return an error
-    // quickly instead of hanging and piling up CLOSE_WAIT sockets that would
-    // otherwise wedge the whole backend.
-    connectionTimeoutMillis: 5000,
-    idleTimeoutMillis: 10000,
+    // Pool tuned for Prisma Postgres (local `prisma dev`) which drops recycled
+    // idle connections. Keeping connections warm avoids the intermittent
+    // "Connection terminated unexpectedly" error, while a bounded connect
+    // timeout still fails fast when the database is genuinely down.
     max: 10,
+    idleTimeoutMillis: 0,
+    connectionTimeoutMillis: 10000,
+    keepAlive: true,
   });
   return new PrismaClient({ adapter });
 }
