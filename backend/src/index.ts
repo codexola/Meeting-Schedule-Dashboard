@@ -4,6 +4,7 @@ import express from "express";
 import companiesRouter from "./routes/companies.js";
 import meetingsRouter from "./routes/meetings.js";
 import searchRouter from "./routes/search.js";
+import { prisma } from "./lib/prisma.js";
 
 const app = express();
 const PORT = Number(process.env.PORT ?? 3100);
@@ -49,12 +50,25 @@ app.get("/", (_req, res) => {
   });
 });
 
-app.get("/health", (_req, res) => {
-  res.json({
-    ok: true,
-    service: "meeting-schedule-backend",
-    timestamp: new Date().toISOString(),
-  });
+app.get("/health", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({
+      ok: true,
+      service: "meeting-schedule-backend",
+      database: "connected",
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error("Health check database error:", error);
+    res.status(503).json({
+      ok: false,
+      service: "meeting-schedule-backend",
+      database: "disconnected",
+      error: "Database unavailable. Run npx prisma dev from the project root.",
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 app.use("/api/meetings", meetingsRouter);

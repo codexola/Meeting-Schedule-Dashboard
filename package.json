@@ -5,6 +5,8 @@
   "scripts": {
     "dev": "node scripts/start-dev.mjs",
     "dev:backend": "npm run dev --prefix backend",
+    "dev:db": "npx prisma dev",
+    "dev:all": "node scripts/ensure-db.mjs && npm run dev --prefix backend",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",

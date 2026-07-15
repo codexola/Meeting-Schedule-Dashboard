@@ -1,9 +1,13 @@
 import { execSync, spawn } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config } from "dotenv";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const backendRoot = join(__dirname, "..");
+const projectRoot = join(backendRoot, "..");
+config({ path: join(backendRoot, ".env") });
+
 const HOST = process.env.HOST ?? "103.179.45.111";
 const PORT = process.env.PORT ?? "3100";
 
@@ -43,6 +47,19 @@ function killPort(port) {
 
 console.log(`Starting backend on http://${HOST}:${PORT}`);
 killPort(PORT);
+
+try {
+  execSync("node scripts/ensure-db.mjs", {
+    cwd: backendRoot,
+    stdio: "inherit",
+    env: process.env,
+  });
+} catch {
+  console.error(
+    "Database is not running. Start it with: npx prisma dev (from project root)"
+  );
+  process.exit(1);
+}
 
 const child = spawn(
   process.platform === "win32" ? "npx.cmd" : "npx",

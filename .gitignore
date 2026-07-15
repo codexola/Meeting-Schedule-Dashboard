@@ -49,5 +49,8 @@ next-env.d.ts
 
 # Keep committed snapshots under data/ for restore after schema/config changes
 !data/
-!data/**/*.json
+!data/*.json
+
+# Runtime DB snapshots (created by backend/scripts/backup-data.mjs) stay local
+/data/backups/
 

@@ -8,6 +8,12 @@ const globalForPrisma = globalThis as unknown as {
 function createPrismaClient() {
   const adapter = new PrismaPg({
     connectionString: process.env.DATABASE_URL!,
+    // Fail fast when the database is unreachable so requests return an error
+    // quickly instead of hanging and piling up CLOSE_WAIT sockets that would
+    // otherwise wedge the whole backend.
+    connectionTimeoutMillis: 5000,
+    idleTimeoutMillis: 10000,
+    max: 10,
   });
   return new PrismaClient({ adapter });
 }

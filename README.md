@@ -33,6 +33,8 @@ npm install --prefix backend
 npx prisma dev
 ```
 
+Keep this running. The backend auto-starts the database if it is stopped, but `npx prisma dev` must remain available on port **51214**.
+
 ### 3. Apply database schema
 
 ```bash
@@ -70,8 +72,10 @@ Frontend runs at **http://103.179.45.111:3000** and proxies API calls to the bac
 ### Requirements for Vercel to work
 
 - Backend must be **running** on your server (`npm run dev --prefix backend`)
-- PostgreSQL must be **running** locally (`npx prisma dev`)
+- PostgreSQL must be **running** locally (`npx prisma dev` on port 51214)
 - Port **3100** must be **open** on `103.179.45.111` so Vercel can reach the API
+
+If API calls return 500 with `ECONNREFUSED` in backend logs, the database is down. Run `npx prisma dev` from the project root.
 
 ## Environment files
 
