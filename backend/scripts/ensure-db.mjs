@@ -1,11 +1,11 @@
 /**
- * Wait until the local database is actually serving queries (real SELECT 1).
+ * Ensure the local database is actually serving queries (real SELECT 1).
  *
- * The database lifecycle is owned by the PM2 process "meeting-db" (see
- * ecosystem.config.cjs). This script only WAITS for it to be queryable so the
- * backend starts in the right order; it does not spawn its own database to
- * avoid two managers racing over the same port.
+ * Prefer waiting for the PM2-managed "meeting-db". Only start it when it is
+ * missing/stopped — never restart a healthy online process (that caused
+ * freePort kills → lock races → ECONNREFUSED flaps).
  */
+import { execSync } from "node:child_process";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { config } from "dotenv";
@@ -13,6 +13,7 @@ import pg from "pg";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const backendRoot = join(__dirname, "..");
+const projectRoot = join(backendRoot, "..");
 config({ path: join(backendRoot, ".env") });
 
 const DATABASE_URL =
@@ -39,11 +40,59 @@ async function canQuery() {
   }
 }
 
-export async function ensureDatabase(timeoutMs = 60_000) {
+function pm2Status(name) {
+  try {
+    const raw = execSync("pm2 jlist", { encoding: "utf8" });
+    const list = JSON.parse(raw);
+    const app = list.find((p) => p.name === name);
+    return app?.pm2_env?.status ?? "missing";
+  } catch {
+    return "missing";
+  }
+}
+
+function tryStartViaPm2() {
+  try {
+    execSync("pm2 -v", { stdio: "ignore" });
+  } catch {
+    return false;
+  }
+
+  const status = pm2Status("meeting-db");
+  if (status === "online") {
+    console.log('PM2 "meeting-db" is online — waiting for queries (no restart).');
+    return true;
+  }
+
+  const ecosystem = join(projectRoot, "ecosystem.config.cjs");
+  console.log(`Database down — PM2 meeting-db is ${status}; starting...`);
+  try {
+    if (status === "stopped") {
+      execSync("pm2 restart meeting-db", {
+        cwd: projectRoot,
+        stdio: "inherit",
+        env: process.env,
+      });
+    } else {
+      execSync(`pm2 start "${ecosystem}" --only meeting-db`, {
+        cwd: projectRoot,
+        stdio: "inherit",
+        env: process.env,
+      });
+    }
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function ensureDatabase(timeoutMs = 90_000) {
   if (await canQuery()) {
     console.log("Database is reachable and serving queries.");
     return;
   }
+
+  tryStartViaPm2();
 
   console.log("Waiting for the database to become available...");
   const started = Date.now();
@@ -56,7 +105,7 @@ export async function ensureDatabase(timeoutMs = 60_000) {
   }
 
   throw new Error(
-    'Database is not available. Ensure it is running (PM2 "meeting-db", or run "npx prisma dev" from the project root).'
+    'Database is not available. Run: pm2 start meeting-db   (or "npx prisma dev" from the project root).'
   );
 }
 

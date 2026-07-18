@@ -109,9 +109,10 @@ pm2 restart meeting-backend      # restart after code changes
 Reboot persistence: `pm2 save` writes the process list, and the **`MeetingSchedule`**
 Windows scheduled task (`deploy/windows-pm2-start.ps1`) restores it on boot.
 
-> **Do not run `npm run dev --prefix backend` while `meeting-backend` is managed by
-> PM2** — both bind port 3100 and the dev script kills whatever is on that port.
-> For local development, first `pm2 stop meeting-backend`.
+> **Do not fight the PM2 stack.** Running `npm run dev --prefix backend` now
+> ensures `meeting-db` + `meeting-backend` are online under PM2 and exits — it
+> no longer kills port 3100. For a true local `tsx watch` session, use
+> `FORCE_LOCAL=1 npm run dev --prefix backend` (and stop PM2 first if needed).
 
 ## Environment files
 

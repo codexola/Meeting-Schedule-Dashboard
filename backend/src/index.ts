@@ -65,7 +65,7 @@ app.get("/health", async (_req, res) => {
       ok: false,
       service: "meeting-schedule-backend",
       database: "disconnected",
-      error: "Database unavailable. Run npx prisma dev from the project root.",
+      error: 'Database unavailable. Run: pm2 start meeting-db',
       timestamp: new Date().toISOString(),
     });
   }

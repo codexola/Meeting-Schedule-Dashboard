@@ -20,6 +20,9 @@ module.exports = {
       min_uptime: 10000,
       max_restarts: 20,
       restart_delay: 3000,
+      // Keep console windows hidden on Windows (closing them kills the DB).
+      windowsHide: true,
+      interpreter: "C:\\Program Files\\nodejs\\node.exe",
     },
     {
       name: "meeting-backend",
@@ -29,6 +32,8 @@ module.exports = {
       min_uptime: 10000,
       max_restarts: 20,
       restart_delay: 3000,
+      windowsHide: true,
+      interpreter: "C:\\Program Files\\nodejs\\node.exe",
     },
   ],
 };
